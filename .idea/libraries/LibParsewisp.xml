@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="LibParsewisp">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/LibParsewisp.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
