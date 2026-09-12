@@ -12,6 +12,7 @@ import de.kleinert.parsewisp.parsing.*;
 import de.kleinert.parsewisp.result.ParseTree;
 import de.kleinert.parsewisp.util.StrParser;
 import de.kleinert.parsewisp.util.Transform;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,14 +21,16 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
+ * Provides support for ABNF grammars within the Parsewisp framework.
+ * <p>
  * See <a href="https://www.rfc-editor.org/info/rfc5234/">https://www.rfc-editor.org/info/rfc5234/</a>
  * and <a href="https://www.rfc-editor.org/info/rfc7405/">https://www.rfc-editor.org/info/rfc7405/</a>
  */
-public class ABNF {
+public final class ABNF {
     private ABNF() {
     }
 
-    public static class ABNFOptions extends ParserCreationOptions {
+    public static final class ABNFOptions extends ParserCreationOptions {
         boolean allowLookaheadAndNegations;
 
         public ABNFOptions(@Nullable Parser whitespaceParser,
@@ -47,7 +50,9 @@ public class ABNF {
     }
 
     public static @NotNull Parser parser(@NotNull String grammar, @NotNull ABNFOptions options) {
-        var abnfGrammarParser = Parsewisp.parser(baseGrammar(options), ParserCreationOptions.getDefault());
+        var abnfGrammarParser = Parsewisp.parser(
+                baseGrammar(options),
+                ParserCreationOptions.getDefault());
         var tree = abnfGrammarParser.parse(grammar);
 
         if (tree.isFailure()) {
@@ -58,7 +63,8 @@ public class ABNF {
     }
 
     public static @NotNull Grammar baseGrammar(final @NotNull ABNFOptions options) {
-        return new AbnfGrammarParserGrammarBuilder(ParserCreationOptions.getDefault(), options).build();
+        return new AbnfGrammarParserGrammarBuilder(
+                ParserCreationOptions.getDefault(), options).build();
     }
 
 
@@ -68,7 +74,7 @@ public class ABNF {
         return new Transformer(abnfOptions).transform(parsedABNFGrammar);
     }
 
-    private static class Transformer extends GrammarBuilder {
+    private static final class Transformer extends GrammarBuilder {
         private final @NotNull StrParser strParser = new StrParser();
 
         Transformer(final @NotNull ABNFOptions options) {
@@ -77,33 +83,56 @@ public class ABNF {
 
         private Grammar transform(ParseTree tree) {
             Map<@NotNull Sym, @NotNull Function<@NotNull List<Object>, Object>> transformMap = new HashMap<>();
-            transformMap.put(Sym.sym("rulelist"), this::rulelist);
-            transformMap.put(Sym.sym("rule"), c -> Map.entry(c.get(0), c.get(2)));
-            transformMap.put(Sym.sym("nonterm"), c -> nt(c.get(0).toString()));
-            transformMap.put(Sym.sym("hide-nt"), c -> nt(c.get(1).toString()).enableHideTag());
-            transformMap.put(Sym.sym("c-wsp"), this::ignore);
-            transformMap.put(Sym.sym("c-nl"), this::ignore);
-            transformMap.put(Sym.sym("comment"), this::ignore);
-            transformMap.put(Sym.sym("alternation"), c -> altList(rulesNotNull(c)));
-            transformMap.put(Sym.sym("concatenation"), c -> cat(rulesNotNull(c)));
-            transformMap.put(Sym.sym("repetition"), c -> (c.size() == 1)
-                    ? makeRepRule(null, c.get(0))
-                    : makeRepRule(c.get(0).toString(), c.get(1)));
-            transformMap.put(Sym.sym("element"), c -> c.get(0));
-            transformMap.put(Sym.sym("group"), c -> c.get(1));
-            transformMap.put(Sym.sym("hide"), c -> ((Rule) c.get(1)).enableHideTag());
-            transformMap.put(Sym.sym("option"), c -> opt((Rule) c.get(1)));
-            transformMap.put(Sym.sym("look"), c -> look((Rule) c.get(1)));
-            transformMap.put(Sym.sym("neg"), c -> neg((Rule) c.get(1)));
-            transformMap.put(Sym.sym("char-val"), c -> string(
-                    strParser.processString((String) c.get(1)),
-                    ((String) c.get(0)).isEmpty() || ((String) c.get(0)).charAt(1) == 'i'));
-            transformMap.put(Sym.sym("regexp"), c -> regex(strParser.processRegexp(c.get(0).toString())));
-            transformMap.put(Sym.sym("num-val"), c -> c.get(1));
-            transformMap.put(Sym.sym("bin-val"), c -> numValHelper((String) c.get(1), 2));
-            transformMap.put(Sym.sym("dec-val"), c -> numValHelper((String) c.get(1), 10));
-            transformMap.put(Sym.sym("hex-val"), c -> numValHelper((String) c.get(1), 16));
-            transformMap.put(Sym.sym("WSP"), this::ignore);
+            transformMap.put(Sym.sym("rulelist"),
+                    this::rulelist);
+            transformMap.put(Sym.sym("rule"),
+                    c -> Map.entry(c.get(0), c.get(2)));
+            transformMap.put(Sym.sym("nonterm"),
+                    c -> nt(c.get(0).toString()));
+            transformMap.put(Sym.sym("hide-nt"),
+                    c -> nt(c.get(1).toString()).enableHideTag());
+            transformMap.put(Sym.sym("c-wsp"),
+                    this::ignore);
+            transformMap.put(Sym.sym("c-nl"),
+                    this::ignore);
+            transformMap.put(Sym.sym("comment"),
+                    this::ignore);
+            transformMap.put(Sym.sym("alternation"),
+                    c -> altList(rulesNotNull(c)));
+            transformMap.put(Sym.sym("concatenation"),
+                    c -> cat(rulesNotNull(c)));
+            transformMap.put(Sym.sym("repetition"),
+                    c -> (c.size() == 1)
+                            ? makeRepRule(null, c.get(0))
+                            : makeRepRule(c.get(0).toString(), c.get(1)));
+            transformMap.put(Sym.sym("element"),
+                    c -> c.get(0));
+            transformMap.put(Sym.sym("group"),
+                    c -> c.get(1));
+            transformMap.put(Sym.sym("hide"),
+                    c -> ((Rule) c.get(1)).enableHideTag());
+            transformMap.put(Sym.sym("option"),
+                    c -> opt((Rule) c.get(1)));
+            transformMap.put(Sym.sym("look"),
+                    c -> look((Rule) c.get(1)));
+            transformMap.put(Sym.sym("neg"),
+                    c -> neg((Rule) c.get(1)));
+            transformMap.put(Sym.sym("char-val"),
+                    c -> string(
+                            strParser.processString((String) c.get(1)),
+                            ((String) c.get(0)).isEmpty() || ((String) c.get(0)).charAt(1) == 'i'));
+            transformMap.put(Sym.sym("regexp"),
+                    c -> regex(strParser.processRegexp(c.get(0).toString())));
+            transformMap.put(Sym.sym("num-val"),
+                    c -> c.get(1));
+            transformMap.put(Sym.sym("bin-val"),
+                    c -> numValHelper((String) c.get(1), 2));
+            transformMap.put(Sym.sym("dec-val"),
+                    c -> numValHelper((String) c.get(1), 10));
+            transformMap.put(Sym.sym("hex-val"),
+                    c -> numValHelper((String) c.get(1), 16));
+            transformMap.put(Sym.sym("WSP"),
+                    this::ignore);
             return Transform.transform(tree, transformMap, r -> (Grammar) r);
         }
 
@@ -140,24 +169,24 @@ public class ABNF {
             return content.stream().filter(Objects::nonNull).map(this::of).toList();
         }
 
-        private Object ignore(List<Object> content) {
+        private @Nullable Object ignore(List<Object> content) {
             return null;
         }
 
-        private Rule numValHelper(String digitStr, int radix) {
-            var minusIndex = digitStr.indexOf('-');
-            if (minusIndex < 0) {
-                var sb = new StringBuilder();
-                for (String part : digitStr.split("\\.")) {
-                    sb.appendCodePoint(Integer.parseInt(part, radix));
+        private Rule numValHelper(@NotNull String digitStr, int radix) {
+                var minusIndex = digitStr.indexOf('-');
+                if (minusIndex < 0) {
+                    var sb = new StringBuilder();
+                    for (String part : digitStr.split("\\.")) {
+                        sb.appendCodePoint(Integer.parseInt(part, radix));
+                    }
+                    return string(sb.toString());
                 }
-                return string(sb.toString());
-            }
 
-            var parts = digitStr.split("-");
-            var min = Integer.parseInt(parts[0], radix);
-            var max = Integer.parseInt(parts[1], radix);
-            return numVal(min, max);
+                var parts = digitStr.split("-");
+                var min = Integer.parseInt(parts[0], radix);
+                var max = Integer.parseInt(parts[1], radix);
+                return numVal(min, max);
         }
 
         private Rule makeRepRule(@Nullable String s, Object rule) {
@@ -191,8 +220,11 @@ public class ABNF {
                 min = parts[0].isEmpty() ? 0 : Integer.parseInt(parts[0]);
                 max = Integer.parseInt(parts[1]);
             }
-
-            return rep((Rule) rule, min, max);
+            try {
+                return rep((Rule) rule, min, max);
+            } catch (IllegalArgumentException iae) {
+                throw new ParserCreationFailure(iae);
+            }
         }
 
         @Override
@@ -200,10 +232,12 @@ public class ABNF {
         }
     }
 
-    private static class AbnfGrammarParserGrammarBuilder extends GrammarBuilder {
+    private static final class AbnfGrammarParserGrammarBuilder extends GrammarBuilder {
         private final ABNFOptions abnfOptions;
 
-        protected AbnfGrammarParserGrammarBuilder(final @NotNull ParserCreationOptions options, ABNFOptions abnfOptions) {
+        private AbnfGrammarParserGrammarBuilder(
+                final @NotNull ParserCreationOptions options,
+                @NotNull ABNFOptions abnfOptions) {
             super(options);
             this.abnfOptions = abnfOptions;
         }
@@ -365,7 +399,7 @@ public class ABNF {
             // hex-val        =  "x" 1*HEXDIG [ 1*("." 1*HEXDIG) / ("-" 1*HEXDIG) ]
             addProduction(
                     hexVal.getKeyword(),
-                    cat(string("x"), regex("[a-zA-Z0-9]+([.a-zA-Z0-9]*[a-zA-Z0-9]|-[a-zA-Z0-9]+)?(?x) # Hexadecimal num-val")));
+                    cat(string("x"), regex("[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?(?x) # Hexadecimal num-val")));
 
             addProduction(WSP.getKeyword(), regex("[\\u0020\\u0009](?x) # Whitespace"));
         }
