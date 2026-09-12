@@ -1,11 +1,17 @@
 package de.kleinert.parsewisp.abnf;
 
+import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
+import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ABNFTest {
+
+    @Test void test() {
+        System.out.println(Parsewisp.parser(ABNF.baseGrammar(ABNF.ABNFOptions.getDefault()), ParserCreationOptions.getDefault()).show());
+    }
 
     // ============================================================
     // ============================================================

@@ -12,7 +12,6 @@ import de.kleinert.parsewisp.parsing.*;
 import de.kleinert.parsewisp.result.ParseTree;
 import de.kleinert.parsewisp.util.StrParser;
 import de.kleinert.parsewisp.util.Transform;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,19 +19,46 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-/**
- * Provides support for ABNF grammars within the Parsewisp framework.
- * <p>
- * See <a href="https://www.rfc-editor.org/info/rfc5234/">https://www.rfc-editor.org/info/rfc5234/</a>
- * and <a href="https://www.rfc-editor.org/info/rfc7405/">https://www.rfc-editor.org/info/rfc7405/</a>
- */
+/// Provides support for ABNF grammars within the Parsewisp framework.
+///
+/// See [https://www.rfc-editor.org/info/rfc5234/](https://www.rfc-editor.org/info/rfc5234/)
+/// and [https://www.rfc-editor.org/info/rfc7405/](https://www.rfc-editor.org/info/rfc7405/)
+///
+/// Any ABNF grammar provides the following core rules:
+/// ```g
+/// ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
+/// BIT            =  "0" / "1"
+/// CHAR           =  %x01-7F ; any 7-bit US-ASCII character, excluding NUL
+/// CR             =  %x0D ; carriage return
+/// CRLF           =  CR LF ; Internet standard newline
+/// CTL            =  %x00-1F / %x7F ; controls
+/// DIGIT          =  %x30-39 ; 0-9
+/// DQUOTE         =  %x22 ; " (Double Quote)
+/// HEXDIG         =  DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+/// HTAB           =  %x09 ; horizontal tab
+/// LF             =  %x0A ; linefeed
+/// LWSP           =  *(WSP / CRLF WSP)
+/// OCTET          =  %x00-FF ; 8 bits of data
+/// SP             =  %x20
+/// VCHAR          =  %x21-7E ; visible (printing) characters
+/// WSP            =  SP / HTAB ; white space
+/// ```
 public final class ABNF {
     private ABNF() {
     }
 
+    /**
+     *
+     */
     public static final class ABNFOptions extends ParserCreationOptions {
         boolean allowLookaheadAndNegations;
 
+        /**
+         *
+         * @param whitespaceParser           See {@link ParserCreationOptions#getWhitespaceParser()}
+         * @param startProduction            See {@link ParserCreationOptions#getStartProduction()}
+         * @param allowLookaheadAndNegations If true, allow the usage of lookaheads and negative lookaheads.
+         */
         public ABNFOptions(@Nullable Parser whitespaceParser,
                            @Nullable Sym startProduction,
                            boolean allowLookaheadAndNegations) {
@@ -40,15 +66,39 @@ public final class ABNF {
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
         }
 
+        /**
+         * The default options for ABNF parsers.
+         *
+         * @return The default options for ABNF parsers.
+         */
         public static @NotNull ABNFOptions getDefault() {
             return new ABNFOptions(null, null, false);
         }
     }
 
+    /**
+     * Constructs a {@link Parser} based on the grammar. Uses {@link ABNFOptions#getDefault()} as options.
+     *
+     * @param grammar The grammar.
+     * @return A parser based on the provided grammar.
+     * @see #parser(String, ABNFOptions)
+     */
     public static @NotNull Parser parser(@NotNull String grammar) {
         return parser(grammar, ABNFOptions.getDefault());
     }
 
+    /**
+     * Constructs a {@link Parser} based on the grammar.
+     * <p>
+     * The `look` and `neg` rules are only added if {@link ABNFOptions#allowLookaheadAndNegations} is true for the options.
+     * <p>
+     * All options apply as described in {@link ParserCreationOptions}, except {@link ParserCreationOptions#getRedefinitionOption()} is set to {@link RedefinitionOption#CHOICE}.
+     *
+     * @param grammar The grammar.
+     * @param options The options.
+     * @return A parser based on the provided grammar.
+     * @see #parser(String)
+     */
     public static @NotNull Parser parser(@NotNull String grammar, @NotNull ABNFOptions options) {
         var abnfGrammarParser = Parsewisp.parser(
                 baseGrammar(options),
@@ -62,11 +112,43 @@ public final class ABNF {
         return Parsewisp.parser(new ABNF().transform(tree.castToParseSuccess(), options), null);
     }
 
+    /// The base grammar of ABNF itself. It is defined as follows:
+    /// ```
+    /// rulelist = { c-wsp } rule (rule | <{ c-wsp }>)+
+    /// rule = (hide-nt | nonterm) <{ c-wsp }> ("=" | "=/") <{ c-wsp }> alternation { WSP } [ c-nl ]
+    /// nonterm = #"[a-zA-Z][a-zA-Z0-9\-]*"
+    /// hide-nt = "<" #"[a-zA-Z][a-zA-Z0-9\-]*" ">"
+    /// c-wsp = #"\s+" | c-nl
+    /// c-nl = comment | #"\r?\n"
+    /// comment = ";" { (WSP | #"^\S+") } (#"\r?\n" | eof)
+    /// alternation = concatenation { (<{ c-wsp }> "/" <{ c-wsp }> concatenation) }
+    /// concatenation = repetition { (<{ c-wsp }> repetition) }
+    /// repetition = [ #"[0-9]*(\*[0-9]*)?" ] <{ c-wsp }> element
+    /// element = nonterm | hide | group | option | char-val | regexp | num-val
+    /// group = "(" <{ c-wsp }> alternation <{ c-wsp }> ")"
+    /// hide = "<" <{ c-wsp }> alternation <{ c-wsp }> ">"
+    /// option = "[" <{ c-wsp }> alternation <{ c-wsp }> "]"
+    /// look = "&" <{ c-wsp }> element
+    /// neg = "!" <{ c-wsp }> element
+    /// char-val = #"(%[is])?" #""[^"\\]*(?:\\.[^"\\]*)*""
+    /// regexp = #"#'[^'\\]*(?:\\.[^'\\]*)*'" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\""
+    /// num-val = "%" (bin-val | dec-val | hex-val)
+    /// bin-val = "b" #"[01]+([.01]*[01]|-[01]+)?"
+    /// dec-val = "d" #"[0-9]+([.0-9]*[0-9]|-[0-9]+)?"
+    /// hex-val = "x" #"[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?"
+    /// WSP = #"[\\u0020\\u0009]"
+    /// ```
+    ///
+    /// The `look` and `neg` rules are only added if {@link ABNFOptions#allowLookaheadAndNegations} is true for the options.
+    ///
+    /// All options apply as described in {@link ParserCreationOptions}, except {@link ParserCreationOptions#getRedefinitionOption()} is set to {@link RedefinitionOption#CHOICE}.
+    ///
+    /// @param options The options.
+    /// @return The grammar which parses ABNF grammars.
     public static @NotNull Grammar baseGrammar(final @NotNull ABNFOptions options) {
         return new AbnfGrammarParserGrammarBuilder(
                 ParserCreationOptions.getDefault(), options).build();
     }
-
 
     private @NotNull Grammar transform(
             final @NotNull ParseTree parsedABNFGrammar,
@@ -174,19 +256,19 @@ public final class ABNF {
         }
 
         private Rule numValHelper(@NotNull String digitStr, int radix) {
-                var minusIndex = digitStr.indexOf('-');
-                if (minusIndex < 0) {
-                    var sb = new StringBuilder();
-                    for (String part : digitStr.split("\\.")) {
-                        sb.appendCodePoint(Integer.parseInt(part, radix));
-                    }
-                    return string(sb.toString());
+            var minusIndex = digitStr.indexOf('-');
+            if (minusIndex < 0) {
+                var sb = new StringBuilder();
+                for (String part : digitStr.split("\\.")) {
+                    sb.appendCodePoint(Integer.parseInt(part, radix));
                 }
+                return string(sb.toString());
+            }
 
-                var parts = digitStr.split("-");
-                var min = Integer.parseInt(parts[0], radix);
-                var max = Integer.parseInt(parts[1], radix);
-                return numVal(min, max);
+            var parts = digitStr.split("-");
+            var min = Integer.parseInt(parts[0], radix);
+            var max = Integer.parseInt(parts[1], radix);
+            return numVal(min, max);
         }
 
         private Rule makeRepRule(@Nullable String s, Object rule) {
@@ -294,7 +376,7 @@ public final class ABNF {
                     regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # NonTerminal"));
             addProduction(
                     hideNt.getKeyword(),
-                    cat(string("<"), regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # Nonterminal"), string(">")));
+                    cat(string("<"), regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # Non-terminal"), string(">")));
 
             // c-wsp          =  WSP / (c-nl WSP)
             addProduction(
