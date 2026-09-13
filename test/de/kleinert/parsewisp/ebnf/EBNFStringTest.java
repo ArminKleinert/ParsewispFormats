@@ -7,8 +7,17 @@ import org.junit.jupiter.api.Test;
 
 class EBNFStringTest {
     @Test
-    void caseSensitivityDefaultTest() {
+    void basicDoubleQuoteTest() {
         var p = EBNF.parser("S = \"a\" , \"B\" ;");
+        Assertions.assertTrue(p.parse("ab").isFailure());
+        Assertions.assertTrue(p.parse("Ab").isFailure());
+        Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
+        Assertions.assertTrue(p.parse("AB").isFailure());
+    }
+
+    @Test
+    void basicSingleQuoteTest() {
+        var p = EBNF.parser("S = 'a' , 'B' ;");
         Assertions.assertTrue(p.parse("ab").isFailure());
         Assertions.assertTrue(p.parse("Ab").isFailure());
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));

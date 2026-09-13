@@ -31,4 +31,19 @@ class EBNFAlternationTest {
 
         Assertions.assertEquals(trees, new HashSet<>(p.parses("aaa")));
     }
+
+    @Test
+    void testAlternativeCreatesAmbiguitySlash() {
+        var p = EBNF.parser("S = \"a\" / S , S ;");
+
+        var trees = Set.of(
+                PT.create("S",
+                        PT.create("S", "a"),
+                        PT.create("S", PT.create("S", "a"), PT.create("S", "a"))),
+                PT.create("S",
+                        PT.create("S", PT.create("S", "a"), PT.create("S", "a")),
+                        PT.create("S", "a")));
+
+        Assertions.assertEquals(trees, new HashSet<>(p.parses("aaa")));
+    }
 }

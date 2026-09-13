@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -35,7 +36,7 @@ public class EBNF {
         var res = baseParser(options).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
         return Parsewisp.parser(
-                new EBNFTransformer().transform(res.castToParseSuccess()),
+                new EBNFTransformer(options).transform(res.castToParseSuccess()),
                 ParserCreationOptions.getDefault());
     }
 
@@ -55,6 +56,8 @@ public class EBNF {
     public static final class EBNFOptions extends ParserCreationOptions {
         final boolean allowLookaheadAndNegations;
         final boolean useAlternativeRepresentation;
+        final boolean requireCommasAndTerminators;
+        final Map<String, @NotNull Function<@NotNull String, Optional<String>>> specialSequences;
 
         /**
          *
@@ -65,10 +68,14 @@ public class EBNF {
         public EBNFOptions(@Nullable Parser whitespaceParser,
                            @Nullable Sym startProduction,
                            boolean allowLookaheadAndNegations,
-                           boolean useAlternativeRepresentation) {
+                           boolean useAlternativeRepresentation,
+                           boolean requireCommasAndTerminators,
+                           @Nullable final Map<String, Function<String, Optional<String>>> specialSequences) {
             super(whitespaceParser, startProduction, RedefinitionOption.ERROR, true);
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
             this.useAlternativeRepresentation = useAlternativeRepresentation;
+            this.requireCommasAndTerminators = requireCommasAndTerminators;
+            this.specialSequences = specialSequences == null ? Map.of() : specialSequences;
         }
 
         /**
@@ -77,15 +84,16 @@ public class EBNF {
          * @return The default options for ABNF parsers.
          */
         public static @NotNull EBNFOptions getDefault() {
-            return new EBNFOptions(null, null, false, false);
+            return new EBNFOptions(null, null, false, false, true, Map.of());
         }
     }
 
     private static class EBNFTransformer extends GrammarBuilder {
         private final @NotNull StrParser strParser = new StrParser();
+        private final EBNFOptions options;
 
-        private EBNFTransformer() {
-            super(null);
+        private EBNFTransformer(final @Nullable EBNFOptions options) {
+            super(null);this.options=options==null?EBNFOptions.getDefault():options;
         }
 
         public Grammar transform(ParseTree tree) {
@@ -113,7 +121,6 @@ public class EBNF {
             m.put(Sym.sym("integer"), this::integer);
             m.put(Sym.sym("special_sequence"), this::special_sequence);
             m.put(Sym.sym("comment"), ignoreMe);
-            m.put(Sym.sym("WSP"), ignoreMe);
             m.put(Sym.sym("cWsp"), ignoreMe);
             return Transform.transform(tree, m, ignore -> this.build());
         }
@@ -209,7 +216,9 @@ public class EBNF {
         }
 
         private @NotNull Rule special_sequence(@NotNull List<Object> c) {
-            throw new UnsupportedOperationException("TODO");
+            var fn = options.specialSequences.get((String) c.get(1));
+            if (fn == null) throw new ParserCreationFailure("Unknown special sequence: " + c.get(1));
+            return specialSequence((String) c.get(1), fn);
         }
 
         protected void make() {
@@ -233,23 +242,31 @@ public class EBNF {
                             nt("syntax_rule"), cWsp,
                             zeroOrMore(cat(nt("syntax_rule"), cWsp)))));
 
+            var ruleRhsRule = options.requireCommasAndTerminators
+                    ? cat(nt("definitions_list"), cWsp, alt(string(";"), string(".")))
+                    : cat(nt("definitions_list"), opt(cat(cWsp, alt(string(";"), string(".")))));
             addProduction("syntax_rule", cat(
                     List.of(alt(nt("meta_identifier"), nt("hide_nt")), cWsp,
                             string("="), cWsp,
-                            nt("definitions_list"), cWsp,
-                            string(";"))));
+                            ruleRhsRule)));
 
+            var dividerRule = options.useAlternativeRepresentation
+                    ? string("!")
+                    : string("|");
             addProduction("definitions_list", cat(
                     List.of(nt("ordered_definitions_list"),
-                            zeroOrMore(cat(cWsp, string("|"), cWsp, nt("ordered_definitions_list"))))));
+                            zeroOrMore(cat(cWsp, dividerRule, cWsp, nt("ordered_definitions_list"))))));
 
             addProduction("ordered_definitions_list", cat(
                     List.of(nt("single_definition"),
                             zeroOrMore(cat(cWsp, string("/"), cWsp, nt("single_definition"))))));
 
+            var definitionTailRule = options.requireCommasAndTerminators
+                    ? cat(cWsp, string(","), cWsp, nt("term"))
+                    : cat(cWsp, opt(cat(string(","), cWsp)), nt("term"));
             addProduction("single_definition", cat(
                     List.of(nt("term"),
-                            zeroOrMore(cat(cWsp, string(","), cWsp, nt("term"))))));
+                            zeroOrMore(definitionTailRule))));
 
             addProduction("term", cat(
                     List.of(nt("factor"),
@@ -323,12 +340,9 @@ public class EBNF {
                             zeroOrMore(alt(nt("comment"), insideComment)),
                             string("*)"))));
 
-            addProduction("WSP",
-                    regex(Pattern.compile("\\s*")));
-
             addProduction("cWsp", hide(onceOrMore(alt(
                     nt("comment"),
-                    nt("WSP")))));
+                    regex(Pattern.compile("\\s*"))))));
         }
     }
 }

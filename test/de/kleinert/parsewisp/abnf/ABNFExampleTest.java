@@ -12,7 +12,8 @@ public class ABNFExampleTest {
                 product      = power ("*" / "/") product / power
                 power        = paren-or-val "^" power    / paren-or-val
                 paren-or-val = "(" sum ")"               / number
-                number       = ["+" / "-"] 1* %d48-57
+                number       = ["+" / "-"] digits
+                <digits>     = 1* %d48-57
                 """;
         var p = ABNF.parser(g);
         Assertions.assertEquals(
