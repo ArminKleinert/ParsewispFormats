@@ -1,6 +1,8 @@
 package de.kleinert.parsewisp.ebnf;
 
+import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
+import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -8,6 +10,7 @@ import org.junit.jupiter.api.Test;
 class EBNFStringTest {
     @Test
     void basicDoubleQuoteTest() {
+        System.out.println(Parsewisp.parser(EBNF.baseGrammar(EBNF.EBNFOptions.getDefault()), ParserCreationOptions.getDefault()).show());
         var p = EBNF.parser("S = \"a\" , \"B\" ;");
         Assertions.assertTrue(p.parse("ab").isFailure());
         Assertions.assertTrue(p.parse("Ab").isFailure());

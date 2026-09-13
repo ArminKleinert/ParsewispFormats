@@ -16,10 +16,7 @@ import de.kleinert.parsewisp.util.Transform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -27,25 +24,62 @@ import java.util.regex.Pattern;
  * Grammar from <a href="http://www.cl.cam.ac.uk/~mgk25/iso-14977.pdf">iso-14977 (1996)</a>
  */
 public class EBNF {
-
+    /**
+     *Constructs a {@link Parser} based on the grammar. Uses {@link EBNF.EBNFOptions#getDefault()} as options.
+     * @param grammar The grammar.
+     * @return A parser based on the provided grammar.
+     * @see #parser(String)
+     */
     public static @NotNull Parser parser(@NotNull String grammar) {
         return parser(grammar, EBNFOptions.getDefault());
     }
 
+    /**
+     *
+     * @param grammar The grammar.
+     * @param options The options.
+     * @return A parser based on the provided grammar.
+     * @see #parser(String)
+     */
     public static @NotNull Parser parser(@NotNull String grammar, @Nullable EBNFOptions options) {
-        var res = baseParser(options).parse(grammar);
+        options = options == null ? EBNFOptions.getDefault() : options;
+        var res = Parsewisp.parser(baseGrammar(options), options).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
         return Parsewisp.parser(
                 new EBNFTransformer(options).transform(res.castToParseSuccess()),
                 ParserCreationOptions.getDefault());
     }
 
-    public static @NotNull Parser baseParser(@Nullable EBNFOptions options) {
-        return Parsewisp.parser(
-                baseGrammar(options == null ? EBNFOptions.getDefault() : options),
-                ParserCreationOptions.getDefault());
-    }
-
+    /// The base grammar for Parsewisp EBNF. The grammar can be expressed as follows:
+    /// ```
+    /// syntax = <cWsp> syntax_rule <cWsp> { (syntax_rule <cWsp>) }
+    /// syntax_rule = (meta_identifier | hide_nt) <cWsp> "=" <cWsp> definitions_list <cWsp> (";" | ".")
+    /// definitions_list = ordered_definitions_list { (<cWsp> "|" <cWsp> ordered_definitions_list) }
+    /// ordered_definitions_list = single_definition { (<cWsp> "/" <cWsp> single_definition) }
+    /// single_definition = term { (<cWsp> "," <cWsp> term) }
+    /// term = factor [ (<cWsp> "-" <cWsp> exception) ]
+    /// exception = factor
+    /// factor = [ (integer "*" <cWsp>) ] primary
+    /// primary = optional_sequence | repeated_sequence | special_sequence | grouped_sequence | meta_identifier | terminal | empty | hide_seq
+    /// look = "&" <cWsp> primary
+    /// neg = "!" <cWsp> primary
+    /// empty = ε
+    /// optional_sequence = "[" <cWsp> definitions_list <cWsp> "]"
+    /// repeated_sequence = "{" <cWsp> definitions_list <cWsp> "}"
+    /// grouped_sequence = "(" <cWsp> definitions_list <cWsp> ")"
+    /// hide_seq = "<" <cWsp> definitions_list <cWsp> ">"
+    /// terminal = string_terminal | regex_terminal
+    /// string_terminal = #""[^"\\]*(?:\\.[^"\\]*)*"(?x) # String" | #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) # String"
+    /// regex_terminal = #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) # Regex" | #"#´[^'\\]*(?:\\.[^'\\]*)*´(?x) # Regex" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # Regex"
+    /// meta_identifier = #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal"
+    /// hide_nt = "<" #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal" ">"
+    /// integer = #"[0-9]+"
+    /// special_sequence = "?" #"[^?]+" "?"
+    /// comment = "(*" { (comment | #"(?s)(?:(?!\(\*|\*\)).)*(?x) # Comment text") } "*)"
+    /// cWsp = <comment | #"\s*"+>
+    /// ```
+    /// @param options The options.
+    /// @return The grammar which parses ABNF grammars.
     public static @NotNull Grammar baseGrammar(@NotNull EBNFOptions options) {
         return new EBNFGrammarBuilder(options).build();
     }
@@ -61,9 +95,12 @@ public class EBNF {
 
         /**
          *
-         * @param whitespaceParser           See {@link ParserCreationOptions#getWhitespaceParser()}
-         * @param startProduction            See {@link ParserCreationOptions#getStartProduction()}
-         * @param allowLookaheadAndNegations If true, allow the usage of lookaheads and negative lookaheads.
+         * @param whitespaceParser             See {@link ParserCreationOptions#getWhitespaceParser()}
+         * @param startProduction              See {@link ParserCreationOptions#getStartProduction()}
+         * @param allowLookaheadAndNegations   If true, allow the usage of lookaheads and negative lookaheads.
+         * @param useAlternativeRepresentation
+         * @param requireCommasAndTerminators
+         * @param specialSequences
          */
         public EBNFOptions(@Nullable Parser whitespaceParser,
                            @Nullable Sym startProduction,
@@ -92,8 +129,9 @@ public class EBNF {
         private final @NotNull StrParser strParser = new StrParser();
         private final EBNFOptions options;
 
-        private EBNFTransformer(final @Nullable EBNFOptions options) {
-            super(null);this.options=options==null?EBNFOptions.getDefault():options;
+        private EBNFTransformer(final @NotNull EBNFOptions options) {
+            super(null);
+            this.options = options;
         }
 
         public Grammar transform(ParseTree tree) {
@@ -107,6 +145,8 @@ public class EBNF {
             m.put(Sym.sym("term"), this::term);
             m.put(Sym.sym("exception"), this::exception);
             m.put(Sym.sym("factor"), this::factor);
+            m.put(Sym.sym("look"), this::lookRule);
+            m.put(Sym.sym("neg"), this::negRule);
             m.put(Sym.sym("primary"), this::primary);
             m.put(Sym.sym("empty"), this::empty);
             m.put(Sym.sym("optional_sequence"), this::optional_sequence);
@@ -165,6 +205,14 @@ public class EBNF {
         private @NotNull Rule factor(@NotNull List<Object> c) {
             if (c.size() == 1) return (Rule) c.get(0);
             return rep((Rule) c.get(2), (Integer) c.get(0));
+        }
+
+        private @NotNull Rule lookRule(@NotNull List<Object> c) {
+            return look((Rule) c.get(1));
+        }
+
+        private @NotNull Rule negRule(@NotNull List<Object> c) {
+            return neg((Rule) c.get(1));
         }
 
         private @NotNull Rule primary(@NotNull List<Object> c) {
@@ -275,9 +323,15 @@ public class EBNF {
             addProduction("exception",
                     nt("factor"));
 
-            addProduction("factor", cat(
-                    List.of(opt(cat(nt("integer"), string("*"), cWsp)),
-                            nt("primary"))));
+            final List<Rule> factorRules = new ArrayList<>();
+factorRules.add(                  cat(
+                    opt(cat(nt("integer"), string("*"), cWsp)),
+                    nt("primary")));
+            if (options.allowLookaheadAndNegations) {
+                factorRules.addAll(List.of(nt("look"), nt("neg")));
+            }
+            addProduction("factor", altList(
+                    factorRules));
 
             addProduction("primary", alt(
                     nt("optional_sequence"),
@@ -288,6 +342,14 @@ public class EBNF {
                     nt("terminal"),
                     nt("empty"),
                     nt("hide_seq")));
+
+            addProduction(
+                    Sym.sym("look"),
+                    cat(string("&"), cWsp, nt("primary")));
+
+            addProduction(
+                    Sym.sym("neg"),
+                    cat(string("!"), cWsp, nt("primary")));
 
             addProduction("empty",
                     eps());
