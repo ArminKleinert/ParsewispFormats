@@ -124,44 +124,44 @@ class ABNFRepetitionTest {
     void reverseRepetitionInvalidTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = 2*1 \"a\"").parse("a"));
+                () -> ABNF.parser("S = 2*1 \"a\"").parse("a"));
     }
 
     @Test
     void lonelyRepetitionInvalidTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = *").parse("a"));
+                () -> ABNF.parser("S = *").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = 2*").parse("a"));
+                () -> ABNF.parser("S = 2*").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = *1").parse("a"));
+                () -> ABNF.parser("S = *1").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = 2*1").parse("a"));
+                () -> ABNF.parser("S = 2*1").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = 2").parse("a"));
+                () -> ABNF.parser("S = 2").parse("a"));
     }
 
     @Test
     void wrongSideRepetitionInvalidTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a\" *").parse("a"));
+                () -> ABNF.parser("S = \"a\" *").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a\" 2*").parse("a"));
+                () -> ABNF.parser("S = \"a\" 2*").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a\" *1").parse("a"));
+                () -> ABNF.parser("S = \"a\" *1").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a\" 2*1").parse("a"));
+                () -> ABNF.parser("S = \"a\" 2*1").parse("a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a\" 2").parse("a"));
+                () -> ABNF.parser("S = \"a\" 2").parse("a"));
     }
 }

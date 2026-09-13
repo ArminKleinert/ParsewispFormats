@@ -46,15 +46,15 @@ class ABNFStringTest {
     void invalidStringTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \""));
+                () -> ABNF.parser("S = \""));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"a"));
+                () -> ABNF.parser("S = \"a"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = a\""));
+                () -> ABNF.parser("S = a\""));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = \"\"\""));
+                () -> ABNF.parser("S = \"\"\""));
     }
 }

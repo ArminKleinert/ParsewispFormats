@@ -25,4 +25,5 @@ class ABNFIncrementalDefinitionTest {
                 PT.create("S", "a", PT.create("S", "a", epsTree)),
                 p.parse("aa")
         );
-    }}
+    }
+}
