@@ -109,7 +109,7 @@ public final class ABNF {
             throw new ParserCreationFailure(tree.castToParseFailure().toString());
         }
 
-        return Parsewisp.parser(new ABNF().transform(tree.castToParseSuccess(), options), null);
+        return Parsewisp.parser(new ABNF().transform(tree.castToParseSuccess()), null);
     }
 
     /// The base grammar of ABNF itself. It is defined as follows:
@@ -146,21 +146,19 @@ public final class ABNF {
     /// @param options The options.
     /// @return The grammar which parses ABNF grammars.
     public static @NotNull Grammar baseGrammar(final @NotNull ABNFOptions options) {
-        return new AbnfGrammarParserGrammarBuilder(
-                ParserCreationOptions.getDefault(), options).build();
+        return new AbnfGrammarParserGrammarBuilder(options).build();
     }
 
     private @NotNull Grammar transform(
-            final @NotNull ParseTree parsedABNFGrammar,
-            final @NotNull ABNFOptions abnfOptions) {
-        return new Transformer(abnfOptions).transform(parsedABNFGrammar);
+            final @NotNull ParseTree parsedABNFGrammar) {
+        return new Transformer().transform(parsedABNFGrammar);
     }
 
     private static final class Transformer extends GrammarBuilder {
         private final @NotNull StrParser strParser = new StrParser();
 
-        Transformer(final @NotNull ABNFOptions options) {
-            super(options);
+        Transformer() {
+            super(RedefinitionOption.CHOICE);
         }
 
         private Grammar transform(ParseTree tree) {
@@ -318,9 +316,8 @@ public final class ABNF {
         private final ABNFOptions abnfOptions;
 
         private AbnfGrammarParserGrammarBuilder(
-                final @NotNull ParserCreationOptions options,
                 @NotNull ABNFOptions abnfOptions) {
-            super(options);
+            super(null);
             this.abnfOptions = abnfOptions;
         }
 

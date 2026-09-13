@@ -1,17 +1,15 @@
-package de.kleinert.parsewisp.abnf;
+package de.kleinert.parsewisp.ebnf;
 
-import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
-import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class ABNFRegexTest {
+class EBNFRegexTest {
 
     @Test
     void basicRegex() {
-        var p = ABNF.parser("S = #\"[a-fA-F0-9]+\"");
+        var p = EBNF.parser("S = #\"[a-fA-F0-9]+\" ;");
         Assertions.assertEquals(
                 PT.create("S", "7F"),
                 p.parse("7F")
@@ -19,11 +17,11 @@ class ABNFRegexTest {
 
     @Test
     void singleOrDoubleQuotationEquivalenceForRegexes() {
-        var pSingleQuoted = ABNF.parser("""
-                S = #'a' #'b"c\\''
+        var pSingleQuoted = EBNF.parser("""
+                S = #'a' , #'b"c\\'' ;
                 """);
-        var pDoubleQuoted = ABNF.parser("""
-                S = #"a" #"b\\"c'"
+        var pDoubleQuoted = EBNF.parser("""
+                S = #"a" , #"b\\"c'" ;
                 """);
 
         Assertions.assertEquals(PT.create("S","a","b\"c'"), pSingleQuoted.parse("ab\"c'"));
@@ -38,15 +36,15 @@ class ABNFRegexTest {
     void invalidRegexTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = #\""));
+                ()->EBNF.parser("S = #\" ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = #\"a"));
+                ()->EBNF.parser("S = #\"a ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = #a\""));
+                ()->EBNF.parser("S = #a\" ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->ABNF.parser("S = #\"\"\""));
+                ()->EBNF.parser("S = #\"\"\" ;"));
     }
 }

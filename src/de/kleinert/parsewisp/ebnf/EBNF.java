@@ -2,17 +2,20 @@ package de.kleinert.parsewisp.ebnf;
 
 import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.Sym;
+import de.kleinert.parsewisp.abnf.ABNF;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
 import de.kleinert.parsewisp.parser.Parser;
 import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
+import de.kleinert.parsewisp.parser_options.RedefinitionOption;
 import de.kleinert.parsewisp.parsing.NonTerminal;
 import de.kleinert.parsewisp.parsing.Rule;
 import de.kleinert.parsewisp.result.ParseTree;
 import de.kleinert.parsewisp.util.StrParser;
 import de.kleinert.parsewisp.util.Transform;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,12 +41,40 @@ public class EBNF {
     public static @NotNull Grammar baseGrammar() {
         return new EBNFGrammarBuilder().build();
     }
+    /**
+     *
+     */
+    public static final class EBNFOptions extends ParserCreationOptions {
+        boolean allowLookaheadAndNegations;
+
+        /**
+         *
+         * @param whitespaceParser           See {@link ParserCreationOptions#getWhitespaceParser()}
+         * @param startProduction            See {@link ParserCreationOptions#getStartProduction()}
+         * @param allowLookaheadAndNegations If true, allow the usage of lookaheads and negative lookaheads.
+         */
+        public EBNFOptions(@Nullable Parser whitespaceParser,
+                           @Nullable Sym startProduction,
+                           boolean allowLookaheadAndNegations) {
+            super(whitespaceParser, startProduction, RedefinitionOption.ERROR, true);
+            this.allowLookaheadAndNegations = allowLookaheadAndNegations;
+        }
+
+        /**
+         * The default options for ABNF parsers.
+         *
+         * @return The default options for ABNF parsers.
+         */
+        public static @NotNull EBNFOptions getDefault() {
+            return new EBNFOptions(null, null, false);
+        }
+    }
 
     private static class EBNFTransformer extends GrammarBuilder {
         private final @NotNull StrParser strParser = new StrParser();
 
         private EBNFTransformer() {
-            super(ParserCreationOptions.getDefault());
+            super(null);
         }
 
         public Grammar transform(ParseTree tree) {
@@ -176,7 +207,7 @@ public class EBNF {
 
     private static class EBNFGrammarBuilder extends GrammarBuilder {
         private EBNFGrammarBuilder() {
-            super(ParserCreationOptions.getDefault());
+            super(RedefinitionOption.ERROR);
         }
 
         @Override

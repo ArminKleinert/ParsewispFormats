@@ -26,7 +26,6 @@ public class ABNFWhitespaceFormatTest {
         Assertions.assertEquals(PT.create("S"), ABNF.parser("S=\"\"\t\t").parse(""));
         Assertions.assertEquals(PT.create("S"), ABNF.parser("S=\"\"\n\n").parse(""));
         Assertions.assertEquals(PT.create("S"), ABNF.parser("S=\"\"\r\n").parse(""));
-
         Assertions.assertEquals(PT.create("S"), ABNF.parser("S=\"\"\t    \n     ").parse(""));
     }
 }
