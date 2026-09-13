@@ -2,7 +2,6 @@ package de.kleinert.parsewisp.ebnf;
 
 import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.Sym;
-import de.kleinert.parsewisp.abnf.ABNF;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
@@ -28,24 +27,34 @@ import java.util.regex.Pattern;
  */
 public class EBNF {
 
-    public static @NotNull Parser parser(String grammar) {
-        var res = baseParser().parse(grammar);
+    public static @NotNull Parser parser(@NotNull String grammar) {
+        return parser(grammar, EBNFOptions.getDefault());
+    }
+
+    public static @NotNull Parser parser(@NotNull String grammar, @Nullable EBNFOptions options) {
+        var res = baseParser(options).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
-        return Parsewisp.parser(new EBNFTransformer().transform(res.castToParseSuccess()), ParserCreationOptions.getDefault());
+        return Parsewisp.parser(
+                new EBNFTransformer().transform(res.castToParseSuccess()),
+                ParserCreationOptions.getDefault());
     }
 
-    public static @NotNull Parser baseParser() {
-        return Parsewisp.parser(baseGrammar(), ParserCreationOptions.getDefault());
+    public static @NotNull Parser baseParser(@Nullable EBNFOptions options) {
+        return Parsewisp.parser(
+                baseGrammar(options == null ? EBNFOptions.getDefault() : options),
+                ParserCreationOptions.getDefault());
     }
 
-    public static @NotNull Grammar baseGrammar() {
-        return new EBNFGrammarBuilder().build();
+    public static @NotNull Grammar baseGrammar(@NotNull EBNFOptions options) {
+        return new EBNFGrammarBuilder(options).build();
     }
+
     /**
      *
      */
     public static final class EBNFOptions extends ParserCreationOptions {
-        boolean allowLookaheadAndNegations;
+        final boolean allowLookaheadAndNegations;
+        final boolean useAlternativeRepresentation;
 
         /**
          *
@@ -55,9 +64,11 @@ public class EBNF {
          */
         public EBNFOptions(@Nullable Parser whitespaceParser,
                            @Nullable Sym startProduction,
-                           boolean allowLookaheadAndNegations) {
+                           boolean allowLookaheadAndNegations,
+                           boolean useAlternativeRepresentation) {
             super(whitespaceParser, startProduction, RedefinitionOption.ERROR, true);
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
+            this.useAlternativeRepresentation = useAlternativeRepresentation;
         }
 
         /**
@@ -66,7 +77,7 @@ public class EBNF {
          * @return The default options for ABNF parsers.
          */
         public static @NotNull EBNFOptions getDefault() {
-            return new EBNFOptions(null, null, false);
+            return new EBNFOptions(null, null, false, false);
         }
     }
 
@@ -103,7 +114,7 @@ public class EBNF {
             m.put(Sym.sym("special_sequence"), this::special_sequence);
             m.put(Sym.sym("comment"), ignoreMe);
             m.put(Sym.sym("WSP"), ignoreMe);
-            m.put(Sym.sym("cwsp"), ignoreMe);
+            m.put(Sym.sym("cWsp"), ignoreMe);
             return Transform.transform(tree, m, ignore -> this.build());
         }
 
@@ -206,37 +217,50 @@ public class EBNF {
     }
 
     private static class EBNFGrammarBuilder extends GrammarBuilder {
-        private EBNFGrammarBuilder() {
+        EBNFOptions options;
+
+        private EBNFGrammarBuilder(EBNFOptions options) {
             super(RedefinitionOption.ERROR);
+            this.options = options;
         }
 
         @Override
         protected void make() {
-            var cwsp = hide(nt("cwsp"));
+            var cWsp = hide(nt("cWsp"));
 
-            addProduction("syntax",
-                    cat(cwsp, nt("syntax_rule"), cwsp, zeroOrMore(cat(nt("syntax_rule"), cwsp))));
+            addProduction("syntax", cat(
+                    List.of(cWsp,
+                            nt("syntax_rule"), cWsp,
+                            zeroOrMore(cat(nt("syntax_rule"), cWsp)))));
 
-            addProduction("syntax_rule",
-                    cat(alt(nt("meta_identifier"), nt("hide_nt")), cwsp, string("="), cwsp, nt("definitions_list"), cwsp, string(";")));
+            addProduction("syntax_rule", cat(
+                    List.of(alt(nt("meta_identifier"), nt("hide_nt")), cWsp,
+                            string("="), cWsp,
+                            nt("definitions_list"), cWsp,
+                            string(";"))));
 
-            addProduction("definitions_list",
-                    cat(nt("ordered_definitions_list"), zeroOrMore(cat(cwsp, string("|"), cwsp, nt("ordered_definitions_list")))));
+            addProduction("definitions_list", cat(
+                    List.of(nt("ordered_definitions_list"),
+                            zeroOrMore(cat(cWsp, string("|"), cWsp, nt("ordered_definitions_list"))))));
 
-            addProduction("ordered_definitions_list",
-                    cat(nt("single_definition"), zeroOrMore(cat(cwsp, string("/"), cwsp, nt("single_definition")))));
+            addProduction("ordered_definitions_list", cat(
+                    List.of(nt("single_definition"),
+                            zeroOrMore(cat(cWsp, string("/"), cWsp, nt("single_definition"))))));
 
-            addProduction("single_definition",
-                    cat(nt("term"), zeroOrMore(cat(cwsp, string(","), cwsp, nt("term")))));
+            addProduction("single_definition", cat(
+                    List.of(nt("term"),
+                            zeroOrMore(cat(cWsp, string(","), cWsp, nt("term"))))));
 
-            addProduction("term",
-                    cat(nt("factor"), opt(cat(cwsp, string("-"), cwsp, nt("exception")))));
+            addProduction("term", cat(
+                    List.of(nt("factor"),
+                            opt(cat(cWsp, string("-"), cWsp, nt("exception"))))));
 
             addProduction("exception",
                     nt("factor"));
 
-            addProduction("factor",
-                    cat(opt(cat(nt("integer"), string("*"), cwsp)), nt("primary")));
+            addProduction("factor", cat(
+                    List.of(opt(cat(nt("integer"), string("*"), cWsp)),
+                            nt("primary"))));
 
             addProduction("primary", alt(
                     nt("optional_sequence"),
@@ -251,19 +275,21 @@ public class EBNF {
             addProduction("empty",
                     eps());
 
-            addProduction("optional_sequence", alt(
-                    cat(string("["), cwsp, nt("definitions_list"), cwsp, string("]")),
-                    cat(string("(/"), cwsp, nt("definitions_list"), cwsp, string("/)"))));
+            var optionalSequenceRule = options.useAlternativeRepresentation
+                    ? cat(string("(/"), cWsp, nt("definitions_list"), cWsp, string("/)"))
+                    : cat(string("["), cWsp, nt("definitions_list"), cWsp, string("]"));
+            addProduction("optional_sequence", optionalSequenceRule);
 
-            addProduction("repeated_sequence", alt(
-                    cat(string("{"), cwsp, nt("definitions_list"), cwsp, string("}")),
-                    cat(string("(:"), cwsp, nt("definitions_list"), cwsp, string(":)"))));
+            var repeatedSequenceRule = options.useAlternativeRepresentation
+                    ? cat(string("(:"), cWsp, nt("definitions_list"), cWsp, string(":)"))
+                    : cat(string("{"), cWsp, nt("definitions_list"), cWsp, string("}"));
+            addProduction("repeated_sequence", repeatedSequenceRule);
 
             addProduction("grouped_sequence",
-                    cat(string("("), cwsp, nt("definitions_list"), cwsp, string(")")));
+                    cat(string("("), cWsp, nt("definitions_list"), cWsp, string(")")));
 
             addProduction("hide_seq",
-                    cat(string("<"), cwsp, nt("definitions_list"), cwsp, string(">")));
+                    cat(string("<"), cWsp, nt("definitions_list"), cWsp, string(">")));
 
             addProduction("terminal", alt(
                     nt("string_terminal"),
@@ -290,15 +316,19 @@ public class EBNF {
             addProduction("special_sequence",
                     cat(string("?"), regex("[^?]+"), string("?")));
 
-            addProduction("comment",
-                    cat(string("(*"), regex("^(?!\\*\\)).*"), string("*)")));
+            final var insideComment = regex(
+                    Pattern.compile("(?s)(?:(?!\\(\\*|\\*\\)).)*(?x) # Comment text"));
+            addProduction("comment", cat(
+                    List.of(string("(*"),
+                            zeroOrMore(alt(nt("comment"), insideComment)),
+                            string("*)"))));
 
             addProduction("WSP",
                     regex(Pattern.compile("\\s*")));
 
-            addProduction("cwsp", hide(alt(
+            addProduction("cWsp", hide(onceOrMore(alt(
                     nt("comment"),
-                    nt("WSP"))));
+                    nt("WSP")))));
         }
     }
 }

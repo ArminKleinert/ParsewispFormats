@@ -22,6 +22,14 @@ public class ABNFCommentTest {
     }
 
     @Test
+    void commentAfterRuleInSameLine() {
+        var tree = PT.create("S", "A");
+        Assertions.assertEquals(tree, ABNF.parser("S = \"A\";Comment").parse("A"));
+        Assertions.assertEquals(tree, ABNF.parser("S = %d65;Comment").parse("A"));
+        Assertions.assertEquals(tree, ABNF.parser("S = %d66 / %d65;Comment").parse("A"));
+    }
+
+    @Test
     void commentBeforeAndAfterFirstRule() {
         var tree = PT.create("S", "A");
         Assertions.assertEquals(tree, ABNF.parser("; Comment\nS = \"A\"\n;Comment").parse("A"));
@@ -38,6 +46,15 @@ public class ABNFCommentTest {
                 ABNF.parser("; Comment\nS = A\n; Comment\nA = %d65\n; Comment").parse("A"));
         Assertions.assertEquals(tree,
                 ABNF.parser("; Comment\nS = A\n; Comment\nA = %d66 / %d65\n; Comment").parse("A"));
+    }
+
+    @Test
+    void commentInComment() {
+        var p = ABNF.parser("""
+                ; Comment ; Nested comment
+                S = "A"
+                """);
+        Assertions.assertEquals(PT.create("S", "A"), p.parse("A"));
     }
 
     @Test
