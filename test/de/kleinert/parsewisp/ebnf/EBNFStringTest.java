@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 class EBNFStringTest {
     @Test
     void basicDoubleQuoteTest() {
-        System.out.println(Parsewisp.parser(EBNF.baseGrammar(EBNF.EBNFOptions.getDefault()), ParserCreationOptions.getDefault()).show());
         var p = EBNF.parser("S = \"a\" , \"B\" ;");
         Assertions.assertTrue(p.parse("ab").isFailure());
         Assertions.assertTrue(p.parse("Ab").isFailure());
