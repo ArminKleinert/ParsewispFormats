@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class EBNFOptionalTest {
+class EBNFOptionalTest {
     @Test
     void basicOptionTest() {
         var p = EBNF.parser("S = [ \"A\" ] ;");

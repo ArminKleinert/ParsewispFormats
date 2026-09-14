@@ -48,12 +48,13 @@ public final class ABNF {
     }
 
     /**
-     *
+     * Options for creating ABNF parsers.
      */
     public static final class ABNFOptions extends ParserCreationOptions {
-        boolean allowLookaheadAndNegations;
+        final boolean allowLookaheadAndNegations;
 
         /**
+         * Constructor.
          *
          * @param whitespaceParser           See {@link ParserCreationOptions#getWhitespaceParser()}
          * @param startProduction            See {@link ParserCreationOptions#getStartProduction()}

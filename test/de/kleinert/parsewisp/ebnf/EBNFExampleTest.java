@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class EBNFExampleTest {
+class EBNFExampleTest {
     @Test
     void exampleTest() {
         var g = """

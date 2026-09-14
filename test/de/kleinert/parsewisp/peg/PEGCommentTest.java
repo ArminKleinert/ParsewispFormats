@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class PEGCommentTest {
+class PEGCommentTest {
     @Test
     void commentBeforeFirstRule() {
         var tree = PT.create("S", "A");

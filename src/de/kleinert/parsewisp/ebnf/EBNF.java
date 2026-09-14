@@ -24,8 +24,12 @@ import java.util.regex.Pattern;
  * Grammar from <a href="http://www.cl.cam.ac.uk/~mgk25/iso-14977.pdf">iso-14977 (1996)</a>
  */
 public class EBNF {
+    private EBNF() {
+    }
+
     /**
-     *Constructs a {@link Parser} based on the grammar. Uses {@link EBNF.EBNFOptions#getDefault()} as options.
+     * Constructs a {@link Parser} based on the grammar. Uses {@link EBNF.EBNFOptions#getDefault()} as options.
+     *
      * @param grammar The grammar.
      * @return A parser based on the provided grammar.
      * @see #parser(String)
@@ -78,6 +82,7 @@ public class EBNF {
     /// comment = "(*" { (comment | #"(?s)(?:(?!\(\*|\*\)).)*(?x) # Comment text") } "*)"
     /// cWsp = <comment | #"\s*"+>
     /// ```
+    ///
     /// @param options The options.
     /// @return The grammar which parses ABNF grammars.
     public static @NotNull Grammar baseGrammar(@NotNull EBNFOptions options) {
@@ -85,7 +90,7 @@ public class EBNF {
     }
 
     /**
-     *
+     * Options for creating ABNF parsers.
      */
     public static final class EBNFOptions extends ParserCreationOptions {
         final boolean allowLookaheadAndNegations;
@@ -94,6 +99,7 @@ public class EBNF {
         final Map<String, @NotNull Function<@NotNull String, Optional<String>>> specialSequences;
 
         /**
+         * Constructor.
          *
          * @param whitespaceParser             See {@link ParserCreationOptions#getWhitespaceParser()}
          * @param startProduction              See {@link ParserCreationOptions#getStartProduction()}
@@ -324,7 +330,7 @@ public class EBNF {
                     nt("factor"));
 
             final List<Rule> factorRules = new ArrayList<>();
-factorRules.add(                  cat(
+            factorRules.add(cat(
                     opt(cat(nt("integer"), string("*"), cWsp)),
                     nt("primary")));
             if (options.allowLookaheadAndNegations) {

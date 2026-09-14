@@ -12,7 +12,8 @@ import java.util.Arrays;
  * Helper functions for creating and handling parse trees in test cases.
  */
 public final class PT {
-    private PT() {}
+    private PT() {
+    }
 
     /**
      * Creates a parse tree from a tag and content.
@@ -33,8 +34,8 @@ public final class PT {
      * <p>
      * If {@param content} is null, the content list of the tree will be empty. If {@param content} is a {@link FlatResultSeq}, it becomes the content of the tree. Otherwise, {@param content} becomes a singleton list.
      *
-     * @param tag     The tag as a node.
-     * @param content The content as a node.
+     * @param tag       The tag as a node.
+     * @param content   The content as a node.
      * @param spanStart Starting index in the input (inclusive).
      * @param spanEnd   End index in the input (exclusive).
      * @return A new parse tree.
@@ -43,7 +44,7 @@ public final class PT {
                                             final @Nullable Object content,
                                             final int spanStart,
                                             final int spanEnd) {
-        return ParseTree.create(tag,content,spanStart,spanEnd);
+        return ParseTree.create(tag, content, spanStart, spanEnd);
     }
 
     /**

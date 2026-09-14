@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ABNFWhitespaceFormatTest {
+class ABNFWhitespaceFormatTest {
     @Test
     void noWhitespaceAtAll() {
         Assertions.assertEquals(PT.create("S"), ABNF.parser("S=\"\"").parse(""));

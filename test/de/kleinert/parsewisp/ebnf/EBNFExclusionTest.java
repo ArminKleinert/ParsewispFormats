@@ -4,8 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class EBNFExclusionTest {
-
+class EBNFExclusionTest {
     @Test
     void basicTest4() {
         // Allow 1, 11 and 111, but not 11..

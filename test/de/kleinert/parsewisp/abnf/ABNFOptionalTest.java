@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ABNFOptionalTest {
+class ABNFOptionalTest {
     @Test
     void basicOptionTest() {
         var p = ABNF.parser("S = [ \"A\" ]");

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class EBNFRegexTest {
-
     @Test
     void basicRegex() {
         var p = EBNF.parser("S = #\"[a-fA-F0-9]+\" ;");

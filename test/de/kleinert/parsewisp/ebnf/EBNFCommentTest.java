@@ -4,7 +4,7 @@ import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class EBNFCommentTest {
+class EBNFCommentTest {
     @Test
     void commentBeforeFirstRule() {
         var tree = PT.create("S", "A");
@@ -37,7 +37,7 @@ public class EBNFCommentTest {
 
     @Test
     void commentInComment() {
-        var p =  EBNF.parser("""
+        var p = EBNF.parser("""
                 (*(* tra la la (*(*Comment*) bla bla*) bulb*)*)
                 S = "A" ;
                 """);
