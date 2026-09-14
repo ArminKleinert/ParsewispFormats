@@ -317,7 +317,7 @@ public final class ABNF {
 
         private AbnfGrammarParserGrammarBuilder(
                 @NotNull ABNFOptions abnfOptions) {
-            super(null);
+            super();
             this.abnfOptions = abnfOptions;
         }
 

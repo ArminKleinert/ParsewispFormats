@@ -130,7 +130,7 @@ public class EBNF {
         private final EBNFOptions options;
 
         private EBNFTransformer(final @NotNull EBNFOptions options) {
-            super(null);
+            super();
             this.options = options;
         }
 
