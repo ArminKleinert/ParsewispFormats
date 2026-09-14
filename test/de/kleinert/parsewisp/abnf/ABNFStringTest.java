@@ -13,6 +13,10 @@ class ABNFStringTest {
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("Ab"));
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("AB"));
+
+        Assertions.assertEquals(
+                PT.create("S", "aB"),
+                ABNF.parser("S = \"aB\"").parse("aB"));
     }
 
     @Test
@@ -22,6 +26,10 @@ class ABNFStringTest {
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("Ab"));
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("AB"));
+
+        Assertions.assertEquals(
+                PT.create("S", "aB"),
+                ABNF.parser("S = %i\"aB\"").parse("aB"));
     }
 
     @Test
@@ -31,6 +39,10 @@ class ABNFStringTest {
         Assertions.assertTrue(p.parse("Ab").isFailure());
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
         Assertions.assertTrue(p.parse("AB").isFailure());
+
+        Assertions.assertEquals(
+                PT.create("S", "aB"),
+                ABNF.parser("S = %s\"aB\"").parse("aB"));
     }
 
     @Test

@@ -7,34 +7,59 @@ import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
 import de.kleinert.parsewisp.parser.Parser;
 import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
-import de.kleinert.parsewisp.parsing.NonTerminal;
-import de.kleinert.parsewisp.parsing.Rule;
+import de.kleinert.parsewisp.parser_options.RedefinitionOption;
+import de.kleinert.parsewisp.parsing.*;
 import de.kleinert.parsewisp.result.ParseResult;
 import de.kleinert.parsewisp.util.StrParser;
 import de.kleinert.parsewisp.util.Transform;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
+/// [https://bford.info/pub/lang/peg.pdf](https://bford.info/pub/lang/peg.pdf)
 public class PEG {
     public static @NotNull Parser parser(String grammar) {
-        var options = ParserCreationOptions.getDefault();
-        var res = Parsewisp.parser(baseGrammar(), options).parse(grammar);
+        return parser(grammar, PEGOptions.getDefault());
+    }
+
+    public static @NotNull Parser parser(String grammar, PEGOptions options) {
+        var res = Parsewisp.parser(baseGrammar(), ParserCreationOptions.getDefault()).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
         return Parsewisp.parser(
-                new Transformer().transform(res),
-                ParserCreationOptions.getDefault());
+                new Transformer(options).transform(res),
+                options);
     }
 
     public static @NotNull Grammar baseGrammar() {
         return new PEGGrammarBuilder().build();
     }
 
+    public static class PEGOptions extends ParserCreationOptions {
+        final boolean tryTurnCharClassesIntoPatterns;
+
+        public PEGOptions(@Nullable Parser whitespaceParser, @Nullable Sym startProduction, boolean tryTurnCharClassesIntoPatterns) {
+            super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true);
+            this.tryTurnCharClassesIntoPatterns = tryTurnCharClassesIntoPatterns;
+        }
+
+        public static @NotNull PEGOptions getDefault() {
+            return new PEGOptions(null, null, false);
+        }
+    }
+
     private static class Transformer extends GrammarBuilder {
+        private final PEGOptions options;
+
+        public Transformer(PEGOptions options) {
+            this.options = options;
+        }
+
         @NotNull Grammar transform(ParseResult tree) {
             Function<List<Object>, Object> ignoreMe = (it) -> null;
             var m = new HashMap<Sym, Function<List<Object>, Object>>();
@@ -53,12 +78,12 @@ public class PEG {
             m.put(Sym.sym("Class"), this::classRule);
             m.put(Sym.sym("Range"), this::range);
             m.put(Sym.sym("Char"), this::charRule);
-            m.put(Sym.sym("Spacing"), this::spacing);
-            m.put(Sym.sym("Space"), this::space);
+            m.put(Sym.sym("Spacing"), ignoreMe);
+            m.put(Sym.sym("Space"), ignoreMe);
             return Transform.transform(tree, m, it -> this.build());
         }
 
-        private Object grammar(List<Object> c) {
+        private Object grammar(@NotNull List<Object> c) {
             for (Object r : c) {
                 @SuppressWarnings("unchecked")
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
@@ -68,27 +93,27 @@ public class PEG {
             return null;
         }
 
-        private Object definition(List<Object> c) {
+        private @NotNull Map.Entry<NonTerminal, Rule> definition(@NotNull List<Object> c) {
             var lhs = (NonTerminal) c.get(0);
             var rhs = (Rule) c.get(2);
             return Map.entry(lhs, rhs);
         }
 
-        private Object expression(List<Object> c) {
+        private @NotNull Rule expression(@NotNull List<Object> c) {
             return ordAlt(c.stream()
                     .filter(it -> it instanceof Rule)
                     .map(it -> (Rule) it)
                     .toList());
         }
 
-        private Object sequence(List<Object> c) {
+        private @NotNull Rule sequence(@NotNull List<Object> c) {
             //noinspection unchecked
             return cat((List<Rule>) ((Object) c));
         }
 
-        private Object prefix(List<Object> c) {
+        private @NotNull Rule prefix(@NotNull List<Object> c) {
             if (c.size() == 1)
-                return c.get(0);
+                return (Rule) c.get(0);
             return switch (((String) c.get(0)).charAt(0)) {
                 case '&' -> look((Rule) c.get(1));
                 case '!' -> neg((Rule) c.get(1));
@@ -96,12 +121,30 @@ public class PEG {
             };
         }
 
-        private Object suffix(List<Object> c) {
+        private @NotNull Rule suffix(@NotNull List<Object> c) {
             var r = (Rule) c.get(0);
             if (c.size() == 1)
                 return r;
+
+            var operator = ((String) c.get(1)).charAt(0);
+
+            if (options.tryTurnCharClassesIntoPatterns) {
+                try {
+                    if (r instanceof RegexTerm)
+                        return regex(((RegexTerm) r).getRegexp().pattern() + operator);
+                    if (r instanceof ValueRangeTerm) {
+                        //noinspection PatternVariableCanBeUsed
+                        var cr = (ValueRangeTerm) r;
+                        return regex("[\\u" + cr.getLo() + "-\\u" + cr.getHi() + "]" + operator);
+                    }
+                } catch (PatternSyntaxException ignored) {
+                    // Some regexes, like "[a]+?+" are illegal because the "+" at the end cannot be added.
+                    // In such a case, the transformer simply decides to make a normal repetition/optional rule as below.
+                }
+            }
+
             //noinspection EnhancedSwitchMigration
-            switch (((String) c.get(1)).charAt(0)) {
+            switch (operator) {
                 case '?':
                     return opt(r);
                 case '*':
@@ -113,53 +156,67 @@ public class PEG {
             }
         }
 
-        private Object primary(List<Object> c) {
+        private @NotNull Rule primary(@NotNull List<Object> c) {
             if (c.size() == 3) // Group rule: "(" expression ")"
-                return c.get(1);
-            return c.get(0);
+                return (Rule) c.get(1);
+            return (Rule) c.get(0);
         }
 
-        private Object identifier(List<Object> c) {
+        private @NotNull NonTerminal identifier(@NotNull List<Object> c) {
             return nt(c.get(0).toString());
         }
 
-        private Object literal(List<Object> c) {
-            return c.get(0);
+        private @NotNull Rule literal(List<Object> c) {
+            return (Rule) c.get(0);
         }
 
         private final @NotNull StrParser strParser = new StrParser();
 
-        private Object stringLiteral(List<Object> c) {
+        private @NotNull Rule stringLiteral(@NotNull List<Object> c) {
             return string(strParser.processString((String) c.get(0)));
         }
 
-        private Object regexTerminal(List<Object> c) {
+        private @NotNull Rule regexTerminal(@NotNull List<Object> c) {
             return regex(strParser.processRegexp(c.get(0).toString()));
         }
 
-        private Object dot(List<Object> c) {
+        private @NotNull Rule dot(@NotNull List<Object> c) {
             return regex(".");
         }
 
-        private Object classRule(List<Object> c) {
-            System.out.println("class: "+c);
+        private @NotNull Rule classRule(@NotNull List<Object> c) {
             //noinspection unchecked
-            return cat((List<Rule>) ((Object) c.subList(1, c.size() - 1)));
+            var rules = (List<Rule>) ((Object) c.subList(1, c.size() - 1));
+
+            if (options.tryTurnCharClassesIntoPatterns) {
+                var sb = new StringBuilder("[");
+                for (Rule ruleUncast : rules) {
+                    var rule = (ValueRangeTerm) ruleUncast;
+
+                    if (rule.getLo() == rule.getHi()) sb.append(String.format("\\u%04X", rule.getLo()));
+                    else sb.append(String.format("\\u%04X-\\u%04X", rule.getLo(), rule.getHi()));
+                }
+                sb.append(']');
+                return regex(Pattern.compile(sb.toString()));
+            }
+
+            return alt(rules);
         }
 
-        private Object range(List<Object> c) {
-            System.out.println("range: "+c);
-            if (c.size() == 3) return numVal((Integer) c.get(0), (Integer) c.get(2));
-            return numVal((Integer) c.get(0));
+        private @NotNull ValueRangeTerm range(@NotNull List<Object> c) {
+            return (ValueRangeTerm) (c.size() == 3
+                    ? numVal((Integer) c.get(0), (Integer) c.get(2))
+                    : numVal((Integer) c.get(0)));
         }
 
-        private Object charRule(List<Object> c) {
+        private Integer charRule(@NotNull List<Object> c) {
             var s = (String) c.get(0);
             if (s.charAt(0) == '\\') {
                 if (Character.isDigit(s.charAt(1)))
                     return Integer.parseInt(s.substring(1), 8);
                 if (s.charAt(1) == 'u')
                     return Integer.parseInt(s.substring(2), 16);
+
                 //noinspection EnhancedSwitchMigration
                 switch (s.charAt(1)) {
                     case 'n':
@@ -178,17 +235,11 @@ public class PEG {
                         return (int) ']';
                     case '\\':
                         return (int) '\\';
+                    default:
+                        break;
                 }
             }
             return s.codePointAt(0);
-        }
-
-        private Object spacing(List<Object> c) {
-            return null;
-        }
-
-        private Object space(List<Object> c) {
-            return null;
         }
     }
 
@@ -201,7 +252,7 @@ public class PEG {
                     cat(spacing, onceOrMore(nt("Definition")), eof()));
 
             addProduction("Definition",
-                    cat(nt("Identifier"), spacing, opt(cat(string("<-"), spacing)), nt("Expression")));
+                    cat(nt("Identifier"), spacing, string("<-"), spacing, nt("Expression")));
 
             addProduction("Expression",
                     cat(nt("Sequence"), zeroOrMore(cat(string("/"), spacing, nt("Sequence")))));
@@ -257,7 +308,7 @@ public class PEG {
 
             addProduction("Spacing", zeroOrMore(alt(
                     nt("Space"),
-                    cat(string(";"), regex("[\\u0020\\u0009\\S]+(?x) # Comment until newline/eof"), alt(string("\n"), eof())))));
+                    cat(string("#"), regex("[\\u0020\\u0009\\S]+(?x) # Comment until newline/eof"), alt(string("\n"), eof())))));
 
             addProduction("Space",
                     regex("[\\u0020\\u0009\\r\\n]+"));

@@ -116,9 +116,9 @@ public class EBNF {
         }
 
         /**
-         * The default options for ABNF parsers.
+         * The default options for EBNF parsers.
          *
-         * @return The default options for ABNF parsers.
+         * @return The default options for EBNF parsers.
          */
         public static @NotNull EBNFOptions getDefault() {
             return new EBNFOptions(null, null, false, false, true, Map.of());

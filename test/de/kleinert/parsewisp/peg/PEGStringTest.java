@@ -1,14 +1,13 @@
-package de.kleinert.parsewisp.ebnf;
+package de.kleinert.parsewisp.peg;
 
-import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class EBNFStringTest {
+class PEGStringTest {
     @Test
     void basicDoubleQuoteTest() {
-        var p = EBNF.parser("S = \"a\" , \"B\" ;");
+        var p = PEG.parser("S <- \"a\" \"B\"");
         Assertions.assertTrue(p.parse("ab").isFailure());
         Assertions.assertTrue(p.parse("Ab").isFailure());
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
@@ -16,12 +15,12 @@ class EBNFStringTest {
 
         Assertions.assertEquals(
                 PT.create("S", "aB"),
-                EBNF.parser("S = \"aB\" ;").parse("aB"));
+                PEG.parser("S <- \"aB\"").parse("aB"));
     }
 
     @Test
     void basicSingleQuoteTest() {
-        var p = EBNF.parser("S = 'a' , 'B' ;");
+        var p = PEG.parser("S <- ´a´ ´B´");
         Assertions.assertTrue(p.parse("ab").isFailure());
         Assertions.assertTrue(p.parse("Ab").isFailure());
         Assertions.assertEquals(PT.create("S", "a", "B"), p.parse("aB"));
@@ -29,22 +28,21 @@ class EBNFStringTest {
 
         Assertions.assertEquals(
                 PT.create("S", "aB"),
-                EBNF.parser("S = 'aB' ;").parse("aB"));
+                PEG.parser("S <- ´aB´").parse("aB"));
     }
 
     @Test
-    void invalidStringTest() {
-        Assertions.assertThrows(
-                ParserCreationFailure.class,
-                () -> EBNF.parser("S = \""));
-        Assertions.assertThrows(
-                ParserCreationFailure.class,
-                () -> EBNF.parser("S = \"a"));
-        Assertions.assertThrows(
-                ParserCreationFailure.class,
-                () -> EBNF.parser("S = a\""));
-        Assertions.assertThrows(
-                ParserCreationFailure.class,
-                () -> EBNF.parser("S = \"\"\""));
+    void charAsRegexTest() {
+        // [a]+ is treated as repetition #"[a]"+
+        Assertions.assertEquals(
+                PT.create("S", "a", "a"),
+                PEG.parser("S <- [a]+").parse("aa"));
+
+        var opts = new PEG.PEGOptions(null, null, true);
+
+        // [a]+ is treated as regex #"[a]+"
+        Assertions.assertEquals(
+                PT.create("S", "aa"),
+                PEG.parser("S <- [a]+", opts).parse("aa"));
     }
 }
