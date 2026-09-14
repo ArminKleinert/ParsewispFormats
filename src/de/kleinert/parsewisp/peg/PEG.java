@@ -24,11 +24,11 @@ import java.util.regex.PatternSyntaxException;
 
 /// [https://bford.info/pub/lang/peg.pdf](https://bford.info/pub/lang/peg.pdf)
 public class PEG {
-    public static @NotNull Parser parser(String grammar) {
+    public static @NotNull Parser parser(final @NotNull String grammar) {
         return parser(grammar, PEGOptions.getDefault());
     }
 
-    public static @NotNull Parser parser(String grammar, PEGOptions options) {
+    public static @NotNull Parser parser(final @NotNull String grammar, final @NotNull PEGOptions options) {
         var res = Parsewisp.parser(baseGrammar(), ParserCreationOptions.getDefault()).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
         return Parsewisp.parser(
@@ -40,10 +40,10 @@ public class PEG {
         return new PEGGrammarBuilder().build();
     }
 
-    public static class PEGOptions extends ParserCreationOptions {
+    public static final class PEGOptions extends ParserCreationOptions {
         final boolean tryTurnCharClassesIntoPatterns;
 
-        public PEGOptions(@Nullable Parser whitespaceParser, @Nullable Sym startProduction, boolean tryTurnCharClassesIntoPatterns) {
+        public PEGOptions(final @Nullable Parser whitespaceParser, final @Nullable Sym startProduction, final boolean tryTurnCharClassesIntoPatterns) {
             super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true);
             this.tryTurnCharClassesIntoPatterns = tryTurnCharClassesIntoPatterns;
         }
@@ -53,14 +53,14 @@ public class PEG {
         }
     }
 
-    private static class Transformer extends GrammarBuilder {
-        private final PEGOptions options;
+    private static final class Transformer extends GrammarBuilder {
+        private final @NotNull PEGOptions options;
 
-        public Transformer(PEGOptions options) {
+        public Transformer(final @NotNull PEGOptions options) {
             this.options = options;
         }
 
-        @NotNull Grammar transform(ParseResult tree) {
+        @NotNull Grammar transform(final @NotNull ParseResult tree) {
             Function<List<Object>, Object> ignoreMe = (it) -> null;
             var m = new HashMap<Sym, Function<List<Object>, Object>>();
             m.put(Sym.sym("Grammar"), this::grammar);
@@ -71,6 +71,8 @@ public class PEG {
             m.put(Sym.sym("Suffix"), this::suffix);
             m.put(Sym.sym("Primary"), this::primary);
             m.put(Sym.sym("Identifier"), this::identifier);
+            m.put(Sym.sym("HideNt"), this::hideNt);
+            m.put(Sym.sym("Hide"), this::hide);
             m.put(Sym.sym("Literal"), this::literal);
             m.put(Sym.sym("StringLiteral"), this::stringLiteral);
             m.put(Sym.sym("RegexTerminal"), this::regexTerminal);
@@ -83,7 +85,7 @@ public class PEG {
             return Transform.transform(tree, m, it -> this.build());
         }
 
-        private Object grammar(@NotNull List<Object> c) {
+        private @Nullable Object grammar(final @NotNull List<Object> c) {
             for (Object r : c) {
                 @SuppressWarnings("unchecked")
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
@@ -93,25 +95,25 @@ public class PEG {
             return null;
         }
 
-        private @NotNull Map.Entry<NonTerminal, Rule> definition(@NotNull List<Object> c) {
+        private @NotNull Map.Entry<NonTerminal, Rule> definition(final @NotNull List<Object> c) {
             var lhs = (NonTerminal) c.get(0);
             var rhs = (Rule) c.get(2);
             return Map.entry(lhs, rhs);
         }
 
-        private @NotNull Rule expression(@NotNull List<Object> c) {
+        private @NotNull Rule expression(final @NotNull List<Object> c) {
             return ordAlt(c.stream()
                     .filter(it -> it instanceof Rule)
                     .map(it -> (Rule) it)
                     .toList());
         }
 
-        private @NotNull Rule sequence(@NotNull List<Object> c) {
+        private @NotNull Rule sequence(final @NotNull List<Object> c) {
             //noinspection unchecked
             return cat((List<Rule>) ((Object) c));
         }
 
-        private @NotNull Rule prefix(@NotNull List<Object> c) {
+        private @NotNull Rule prefix(final @NotNull List<Object> c) {
             if (c.size() == 1)
                 return (Rule) c.get(0);
             return switch (((String) c.get(0)).charAt(0)) {
@@ -121,7 +123,7 @@ public class PEG {
             };
         }
 
-        private @NotNull Rule suffix(@NotNull List<Object> c) {
+        private @NotNull Rule suffix(final @NotNull List<Object> c) {
             var r = (Rule) c.get(0);
             if (c.size() == 1)
                 return r;
@@ -156,35 +158,39 @@ public class PEG {
             }
         }
 
-        private @NotNull Rule primary(@NotNull List<Object> c) {
+        private @NotNull Rule primary(final @NotNull List<Object> c) {
             if (c.size() == 3) // Group rule: "(" expression ")"
                 return (Rule) c.get(1);
             return (Rule) c.get(0);
         }
 
-        private @NotNull NonTerminal identifier(@NotNull List<Object> c) {
+        private @NotNull NonTerminal identifier(final @NotNull List<Object> c) {
             return nt(c.get(0).toString());
         }
 
-        private @NotNull Rule literal(List<Object> c) {
+        private @NotNull Rule literal(final @NotNull List<Object> c) {
             return (Rule) c.get(0);
         }
 
+        private @NotNull Rule hideNt(final @NotNull List<Object>c) {return ((Rule)c.get(1)).enableHideTag();}
+
+        private @NotNull Rule hide(final @NotNull List<Object>c) {return ((Rule)c.get(1)).enableHideTag();}
+
         private final @NotNull StrParser strParser = new StrParser();
 
-        private @NotNull Rule stringLiteral(@NotNull List<Object> c) {
+        private @NotNull Rule stringLiteral(final @NotNull List<Object> c) {
             return string(strParser.processString((String) c.get(0)));
         }
 
-        private @NotNull Rule regexTerminal(@NotNull List<Object> c) {
+        private @NotNull Rule regexTerminal(final @NotNull List<Object> c) {
             return regex(strParser.processRegexp(c.get(0).toString()));
         }
 
-        private @NotNull Rule dot(@NotNull List<Object> c) {
+        private @NotNull Rule dot(final @NotNull List<Object> c) {
             return regex(".");
         }
 
-        private @NotNull Rule classRule(@NotNull List<Object> c) {
+        private @NotNull Rule classRule(final @NotNull List<Object> c) {
             //noinspection unchecked
             var rules = (List<Rule>) ((Object) c.subList(1, c.size() - 1));
 
@@ -203,13 +209,13 @@ public class PEG {
             return alt(rules);
         }
 
-        private @NotNull ValueRangeTerm range(@NotNull List<Object> c) {
+        private @NotNull ValueRangeTerm range(final @NotNull List<Object> c) {
             return (ValueRangeTerm) (c.size() == 3
                     ? numVal((Integer) c.get(0), (Integer) c.get(2))
                     : numVal((Integer) c.get(0)));
         }
 
-        private Integer charRule(@NotNull List<Object> c) {
+        private Integer charRule(final @NotNull List<Object> c) {
             var s = (String) c.get(0);
             if (s.charAt(0) == '\\') {
                 if (Character.isDigit(s.charAt(1)))
@@ -243,7 +249,7 @@ public class PEG {
         }
     }
 
-    private static class PEGGrammarBuilder extends GrammarBuilder {
+    private static final class PEGGrammarBuilder extends GrammarBuilder {
         @Override
         protected void make() {
             var spacing = hide(nt("Spacing"));
@@ -252,29 +258,36 @@ public class PEG {
                     cat(spacing, onceOrMore(nt("Definition")), eof()));
 
             addProduction("Definition",
-                    cat(nt("Identifier"), spacing, string("<-"), spacing, nt("Expression")));
+                    cat(alt(nt("Identifier"), nt("HideNt")), spacing, string("<-"), spacing, nt("Expression")));
 
             addProduction("Expression",
-                    cat(nt("Sequence"), zeroOrMore(cat(string("/"), spacing, nt("Sequence")))));
+                    cat(nt("Sequence"), spacing, zeroOrMore(cat(string("/"), spacing, nt("Sequence")))));
 
             addProduction("Sequence",
                     zeroOrMore(nt("Prefix")));
 
             addProduction("Prefix",
-                    cat(alt(string("&"), string("!"), eps()), nt("Suffix")));
+                    cat(alt(string("&"), string("!"), eps()), spacing, nt("Suffix")));
 
             addProduction("Suffix",
-                    cat(nt("Primary"), spacing, alt(string("?"), string("*"), string("+"), eps())));
+                    cat(nt("Primary"), spacing, opt(cat(alt(string("?"), string("*"), string("+")), spacing))));
 
             addProduction("Primary", alt(
                     nt("Identifier"),
                     cat(string("("), spacing, nt("Expression"), spacing, string(")")),
                     nt("Literal"),
                     nt("Class"),
-                    nt("Dot")));
+                    nt("Dot"),
+                    nt("Hide")));
 
             addProduction("Identifier",
                     regex("[a-zA-Z_][a-zA-Z_0-9]*"));
+
+            addProduction("HideNt",
+                    cat(string("<"), nt("Identifier"), string(">")));
+
+            addProduction("Hide",
+                    cat(string("<"), spacing, nt("Expression"), spacing, string(">")));
 
             addProduction("Literal", alt(
                     nt("StringLiteral"),

@@ -60,9 +60,9 @@ public final class ABNF {
          * @param startProduction            See {@link ParserCreationOptions#getStartProduction()}
          * @param allowLookaheadAndNegations If true, allow the usage of lookaheads and negative lookaheads.
          */
-        public ABNFOptions(@Nullable Parser whitespaceParser,
-                           @Nullable Sym startProduction,
-                           boolean allowLookaheadAndNegations) {
+        public ABNFOptions(final @Nullable Parser whitespaceParser,
+                           final @Nullable Sym startProduction,
+                           final boolean allowLookaheadAndNegations) {
             super(whitespaceParser, startProduction, RedefinitionOption.CHOICE, true);
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
         }
@@ -84,23 +84,21 @@ public final class ABNF {
      * @return A parser based on the provided grammar.
      * @see #parser(String, ABNFOptions)
      */
-    public static @NotNull Parser parser(@NotNull String grammar) {
+    public static @NotNull Parser parser(final @NotNull String grammar) {
         return parser(grammar, ABNFOptions.getDefault());
     }
 
-    /**
-     * Constructs a {@link Parser} based on the grammar.
-     * <p>
-     * The `look` and `neg` rules are only added if {@link ABNFOptions#allowLookaheadAndNegations} is true for the options.
-     * <p>
-     * All options apply as described in {@link ParserCreationOptions}, except {@link ParserCreationOptions#getRedefinitionOption()} is set to {@link RedefinitionOption#CHOICE}.
-     *
-     * @param grammar The grammar.
-     * @param options The options.
-     * @return A parser based on the provided grammar.
-     * @see #parser(String)
-     */
-    public static @NotNull Parser parser(@NotNull String grammar, @NotNull ABNFOptions options) {
+    /// Constructs a [Parser] based on the grammar.
+    ///
+    /// The `look` and `neg` rules are only added if [ABNFOptions#allowLookaheadAndNegations] is true for the options.
+    ///
+    /// All options apply as described in [ParserCreationOptions], except [ParserCreationOptions#getRedefinitionOption()] is set to [RedefinitionOption#CHOICE].
+    ///
+    /// @param grammar The grammar.
+    /// @param options The options.
+    /// @return A parser based on the provided grammar.
+    /// @see #parser(String)
+    public static @NotNull Parser parser(final @NotNull String grammar, final @NotNull ABNFOptions options) {
         var abnfGrammarParser = Parsewisp.parser(
                 baseGrammar(options),
                 ParserCreationOptions.getDefault());
@@ -162,7 +160,7 @@ public final class ABNF {
             super(RedefinitionOption.CHOICE);
         }
 
-        private Grammar transform(ParseTree tree) {
+        private Grammar transform(final @NotNull ParseTree tree) {
             Map<@NotNull Sym, @NotNull Function<@NotNull List<Object>, Object>> transformMap = new HashMap<>();
             transformMap.put(Sym.sym("rulelist"),
                     this::rulelist);
@@ -217,7 +215,7 @@ public final class ABNF {
             return Transform.transform(tree, transformMap, r -> (Grammar) r);
         }
 
-        private @NotNull Grammar rulelist(List<Object> content) {
+        private @NotNull Grammar rulelist(final @NotNull List<Object> content) {
             for (Object r : content) {
                 if (r == null) continue;
                 @SuppressWarnings("unchecked")
@@ -246,15 +244,15 @@ public final class ABNF {
             return build();
         }
 
-        private @NotNull List<Rule> rulesNotNull(@NotNull List<Object> content) {
+        private @NotNull List<Rule> rulesNotNull(final @NotNull List<Object> content) {
             return content.stream().filter(Objects::nonNull).map(this::of).toList();
         }
 
-        private @Nullable Object ignore(List<Object> content) {
+        private @Nullable Object ignore(final @NotNull List<Object> content) {
             return null;
         }
 
-        private Rule numValHelper(@NotNull String digitStr, int radix) {
+        private Rule numValHelper(final @NotNull String digitStr, int radix) {
             var minusIndex = digitStr.indexOf('-');
             if (minusIndex < 0) {
                 var sb = new StringBuilder();
@@ -270,7 +268,7 @@ public final class ABNF {
             return numVal(min, max);
         }
 
-        private Rule makeRepRule(@Nullable String s, Object rule) {
+        private Rule makeRepRule(final @Nullable String s, final Object rule) {
             if (s == null || s.isEmpty()) {
                 return (Rule) rule;
             }
