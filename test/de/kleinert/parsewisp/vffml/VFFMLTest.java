@@ -12,7 +12,7 @@ class VFFMLTest {
         System.out.println(p.parse("S = [\\u0041-\\u005A]+[a]?"));
     }
     @Test void test2 () {
-        var p = VFFML.parser("S = [a-zA-Z0-9]+");
+        var p = VFFML.parser("S = [a-zA-Z0-9]*");
         System.out.println(p.show());
         System.out.println(p.parse(""));
         System.out.println(p.parse("fF31"));
