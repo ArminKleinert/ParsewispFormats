@@ -298,7 +298,7 @@ public class PEG {
                     regex("´[^´\\\\]*(?:\\\\.[^´\\\\]*)*´(?x) # String")));
 
             addProduction("RegexTerminal", alt(
-                    regex("#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) # Regex")));
+                    regex("'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) # Regex")));
 
             addProduction("Dot",
                     string("."));
