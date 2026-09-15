@@ -183,7 +183,7 @@ public class PEG {
         }
 
         private @NotNull Rule regexTerminal(final @NotNull List<Object> c) {
-            return regex(strParser.processRegexp(c.get(0).toString()));
+            return regex(strParser.processRegexp(c.get(0).toString(), 1));
         }
 
         private @NotNull Rule dot(final @NotNull List<Object> c) {

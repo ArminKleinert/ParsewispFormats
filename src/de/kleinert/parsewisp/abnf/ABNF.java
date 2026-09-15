@@ -201,7 +201,7 @@ public final class ABNF {
                             strParser.processString((String) c.get(1)),
                             ((String) c.get(0)).isEmpty() || ((String) c.get(0)).charAt(1) == 'i'));
             transformMap.put(Sym.sym("regexp"),
-                    c -> regex(strParser.processRegexp(c.get(0).toString())));
+                    c -> regex(strParser.processRegexp(c.get(0).toString(), 2)));
             transformMap.put(Sym.sym("num-val"),
                     c -> c.get(1));
             transformMap.put(Sym.sym("bin-val"),

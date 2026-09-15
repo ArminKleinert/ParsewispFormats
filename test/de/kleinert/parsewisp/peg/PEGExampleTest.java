@@ -13,7 +13,9 @@ class PEGExampleTest {
                 number = [ "+" / "-" ] , digits ;
                 <digits> = #'[0-9]' , { #'[0-9]' } ;
                 """);
-        System.out.println(p.parse("+123"));
+        Assertions.assertEquals(
+                PT.create("S", PT.create("number", "+", "1", "2", "3")),
+                p.parse("+123"));
     }
 
     @Test
