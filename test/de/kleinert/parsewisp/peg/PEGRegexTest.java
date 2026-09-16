@@ -12,7 +12,8 @@ class PEGRegexTest {
         Assertions.assertEquals(
                 PT.create("S", "7F"),
                 p.parse("7F")
-        ); }
+        );
+    }
 
     @Test
     void singleOrDoubleQuotationEquivalenceForRegexes() {
@@ -23,8 +24,8 @@ class PEGRegexTest {
                 S <- "a" 'b"c\\''
                 """);
 
-        Assertions.assertEquals(PT.create("S","a","b\"c'"), pSingleQuoted.parse("ab\"c'"));
-        Assertions.assertEquals(PT.create("S","a","b\"c'"), pDoubleQuoted.parse("ab\"c'"));
+        Assertions.assertEquals(PT.create("S", "a", "b\"c'"), pSingleQuoted.parse("ab\"c'"));
+        Assertions.assertEquals(PT.create("S", "a", "b\"c'"), pDoubleQuoted.parse("ab\"c'"));
 
         Assertions.assertEquals(pSingleQuoted.parse("ab\"c'"), pDoubleQuoted.parse("ab\"c'"));
         Assertions.assertEquals(pSingleQuoted.parse(""), pDoubleQuoted.parse(""));
@@ -35,15 +36,15 @@ class PEGRegexTest {
     void invalidRegexTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->PEG.parser("S <- ' ;"));
+                () -> PEG.parser("S <- ' ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->PEG.parser("S <- 'a ;"));
+                () -> PEG.parser("S <- 'a ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->PEG.parser("S <- 'a\\' ;"));
+                () -> PEG.parser("S <- 'a\\' ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                ()->PEG.parser("S <- ''' ;"));
+                () -> PEG.parser("S <- ''' ;"));
     }
 }

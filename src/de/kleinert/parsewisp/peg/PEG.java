@@ -172,9 +172,13 @@ public class PEG {
             return (Rule) c.get(0);
         }
 
-        private @NotNull Rule hideNt(final @NotNull List<Object>c) {return ((Rule)c.get(1)).enableHideTag();}
+        private @NotNull Rule hideNt(final @NotNull List<Object> c) {
+            return ((Rule) c.get(1)).enableHideTag();
+        }
 
-        private @NotNull Rule hide(final @NotNull List<Object>c) {return ((Rule)c.get(1)).enableHideTag();}
+        private @NotNull Rule hide(final @NotNull List<Object> c) {
+            return ((Rule) c.get(1)).enableHideTag();
+        }
 
         private final @NotNull StrParser strParser = new StrParser();
 

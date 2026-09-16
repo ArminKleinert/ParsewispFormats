@@ -336,7 +336,7 @@ public class EBNF {
             if (options.allowLookaheadAndNegations) {
                 factorRules.addAll(List.of(nt("look"), nt("neg")));
             }
-            addProduction("factor", altList(
+            addProduction("factor", alt(
                     factorRules));
 
             addProduction("primary", alt(

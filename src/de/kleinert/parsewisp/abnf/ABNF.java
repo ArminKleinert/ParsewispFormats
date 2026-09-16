@@ -177,7 +177,7 @@ public final class ABNF {
             transformMap.put(Sym.sym("comment"),
                     this::ignore);
             transformMap.put(Sym.sym("alternation"),
-                    c -> altList(rulesNotNull(c)));
+                    c -> alt(rulesNotNull(c)));
             transformMap.put(Sym.sym("concatenation"),
                     c -> cat(rulesNotNull(c)));
             transformMap.put(Sym.sym("repetition"),
@@ -412,7 +412,7 @@ public final class ABNF {
             }
             addProduction(
                     element.getKeyword(),
-                    altList(elementAlternatives));
+                    alt(elementAlternatives));
 
             // group          =  "(" *c-wsp alternation *c-wsp ")"
             addProduction(
