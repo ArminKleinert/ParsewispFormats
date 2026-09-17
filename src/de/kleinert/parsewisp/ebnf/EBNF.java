@@ -114,7 +114,7 @@ public class EBNF {
                            boolean useAlternativeRepresentation,
                            boolean requireCommasAndTerminators,
                            @Nullable final Map<String, Function<String, Optional<String>>> specialSequences) {
-            super(whitespaceParser, startProduction, RedefinitionOption.ERROR, true);
+            super(whitespaceParser, startProduction, RedefinitionOption.ERROR, true, new EBNFPrinter());
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
             this.useAlternativeRepresentation = useAlternativeRepresentation;
             this.requireCommasAndTerminators = requireCommasAndTerminators;
@@ -173,7 +173,7 @@ public class EBNF {
 
         private Object syntax(final @NotNull List<Object> c) {
             for (Object r : c) {
-                @SuppressWarnings("unchecked")
+                //noinspection unchecked
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
                 var lhs = prod.getKey().isHidden() ? prod.getValue().hideTag() : prod.getValue();
                 addProduction(prod.getKey().getKeyword(), lhs);

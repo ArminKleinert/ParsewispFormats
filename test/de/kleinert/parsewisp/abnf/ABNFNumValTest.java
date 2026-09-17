@@ -143,8 +143,8 @@ class ABNFNumValTest {
         var pHex = ABNF.parser("S = %x30");
         var pDec = ABNF.parser("S = %d48");
         var pBin = ABNF.parser("S = %b110000");
-        Assertions.assertEquals(pHex, pDec);
-        Assertions.assertEquals(pHex, pBin);
+        Assertions.assertEquals(pHex.grammar(), pDec.grammar());
+        Assertions.assertEquals(pHex.grammar(), pBin.grammar());
     }
 
     @Test
@@ -152,8 +152,8 @@ class ABNFNumValTest {
         var pHex = ABNF.parser("S = %x30-39");
         var pDec = ABNF.parser("S = %d48-57");
         var pBin = ABNF.parser("S = %b110000-111001");
-        Assertions.assertEquals(pHex, pDec);
-        Assertions.assertEquals(pHex, pBin);
+        Assertions.assertEquals(pHex.grammar(), pDec.grammar());
+        Assertions.assertEquals(pHex.grammar(), pBin.grammar());
     }
 
     @Test

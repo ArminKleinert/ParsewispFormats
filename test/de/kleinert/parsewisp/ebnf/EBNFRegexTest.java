@@ -28,7 +28,7 @@ class EBNFRegexTest {
 
         Assertions.assertEquals(pSingleQuoted.parse("ab\"c'"), pDoubleQuoted.parse("ab\"c'"));
         Assertions.assertEquals(pSingleQuoted.parse(""), pDoubleQuoted.parse(""));
-        Assertions.assertEquals(pSingleQuoted, pDoubleQuoted);
+        Assertions.assertEquals(pSingleQuoted.grammar(), pDoubleQuoted.grammar());
     }
 
     @Test

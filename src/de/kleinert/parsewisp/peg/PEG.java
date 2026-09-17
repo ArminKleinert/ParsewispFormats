@@ -44,7 +44,7 @@ public class PEG {
         final boolean tryTurnCharClassesIntoPatterns;
 
         public PEGOptions(final @Nullable Parser whitespaceParser, final @Nullable Sym startProduction, final boolean tryTurnCharClassesIntoPatterns) {
-            super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true);
+            super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true, new PEGPrinter());
             this.tryTurnCharClassesIntoPatterns = tryTurnCharClassesIntoPatterns;
         }
 

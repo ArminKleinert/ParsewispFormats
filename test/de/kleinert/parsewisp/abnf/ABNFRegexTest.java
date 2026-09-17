@@ -1,14 +1,11 @@
 package de.kleinert.parsewisp.abnf;
 
-import de.kleinert.parsewisp.Parsewisp;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
-import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.testutil.PT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ABNFRegexTest {
-
     @Test
     void basicRegex() {
         var p = ABNF.parser("S = #\"[a-fA-F0-9]+\"");
@@ -31,7 +28,7 @@ class ABNFRegexTest {
 
         Assertions.assertEquals(pSingleQuoted.parse("ab\"c'"), pDoubleQuoted.parse("ab\"c'"));
         Assertions.assertEquals(pSingleQuoted.parse(""), pDoubleQuoted.parse(""));
-        Assertions.assertEquals(pSingleQuoted, pDoubleQuoted);
+        Assertions.assertEquals(pSingleQuoted.grammar(), pDoubleQuoted.grammar());
     }
 
     @Test

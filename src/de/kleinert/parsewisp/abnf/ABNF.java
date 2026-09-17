@@ -63,7 +63,7 @@ public final class ABNF {
         public ABNFOptions(final @Nullable Parser whitespaceParser,
                            final @Nullable Sym startProduction,
                            final boolean allowLookaheadAndNegations) {
-            super(whitespaceParser, startProduction, RedefinitionOption.CHOICE, true);
+            super(whitespaceParser, startProduction, RedefinitionOption.CHOICE, true, new ABNFPrinter());
             this.allowLookaheadAndNegations = allowLookaheadAndNegations;
         }
 
@@ -218,25 +218,25 @@ public final class ABNF {
         private @NotNull Grammar rulelist(final @NotNull List<Object> content) {
             for (Object r : content) {
                 if (r == null) continue;
-                @SuppressWarnings("unchecked")
+                //noinspection unchecked
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
                 var lhs = prod.getKey().isHidden() ? prod.getValue().hideTag() : prod.getValue();
                 addProduction(prod.getKey().getKeyword(), lhs);
             }
-            var CRLF = string("\r\n", false);
+            var CRLF = regex("\\u000D\\u000A");
             var WSP = regex(Pattern.compile("[\\u0020\\u0009]"));
             addProduction(Sym.sym("ALPHA"), regex(Pattern.compile("[a-zA-Z]")));
             addProduction(Sym.sym("BIT"), regex(Pattern.compile("[01]")));
             addProduction(Sym.sym("CHAR"), regex(Pattern.compile("[\\u0001-\\u007F]")));
-            addProduction(Sym.sym("CR"), string("\r", false));
+            addProduction(Sym.sym("CR"), regex("\\u000D"));
             addProduction(Sym.sym("CRLF"), CRLF);
             addProduction(Sym.sym("CTL"), regex(Pattern.compile("[\\u0000-\\u001F|\\u007F]")));
             addProduction(Sym.sym("DIGIT"), regex(Pattern.compile("[0-9]")));
             addProduction(Sym.sym("DQUOTE"), string("\"", false));
             addProduction(Sym.sym("HEXDIG"), regex(Pattern.compile("[0-9a-fA-F]")));
-            addProduction(Sym.sym("HTAB"), regex(Pattern.compile("\t")));
-            addProduction(Sym.sym("LF"), regex(Pattern.compile("\n")));
-            addProduction(Sym.sym("LWSP"), zeroOrMore(alt(WSP, cat(CRLF, WSP))));
+            addProduction(Sym.sym("HTAB"), regex(Pattern.compile("\\u0009")));
+            addProduction(Sym.sym("LF"), regex(Pattern.compile("\\u000A")));
+            addProduction(Sym.sym("LWSP"), regex(Pattern.compile("([\\u0020\\u0009]|\\u000D\\u000A[\\u0020\\u0009])?")));
             addProduction(Sym.sym("OCTET"), regex(Pattern.compile("[\\u0000-\\u00FF]")));
             addProduction(Sym.sym("SP"), string(" ", false));
             addProduction(Sym.sym("VCHAR"), regex(Pattern.compile("[\\u0021-\\u007E]")));
@@ -245,7 +245,7 @@ public final class ABNF {
         }
 
         private @NotNull List<Rule> rulesNotNull(final @NotNull List<Object> content) {
-            return content.stream().filter(Objects::nonNull).map(this::of).toList();
+            return content.stream().filter(Objects::nonNull).filter(it->it instanceof Rule).map(it->(Rule)it).toList();
         }
 
         private @Nullable Object ignore(final @NotNull List<Object> content) {
