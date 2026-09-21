@@ -117,7 +117,7 @@ public class QffMs {private QffMs(){}
         }
         private Object       group    (List<Object>c){return c.get(1);
         }
-        private Object       regex    (List<Object>c){return regex(strParser.processRegexp(c.get(0).toString(), 1));
+        private Object       regex    (List<Object>c){return regex(strParser.processRegexp(c.get(0).toString(), 1, 1));
         }
         private Object    literal       (List<Object>c){return strParser.processString((String) c.get(0));
         }

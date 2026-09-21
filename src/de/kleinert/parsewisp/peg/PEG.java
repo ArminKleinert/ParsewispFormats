@@ -5,6 +5,7 @@ import de.kleinert.parsewisp.Sym;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
+import de.kleinert.parsewisp.grammar.GrammarPrinter;
 import de.kleinert.parsewisp.parser.Parser;
 import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.parser_options.RedefinitionOption;
@@ -44,7 +45,7 @@ public class PEG {
         final boolean tryTurnCharClassesIntoPatterns;
 
         public PEGOptions(final @Nullable Parser whitespaceParser, final @Nullable Sym startProduction, final boolean tryTurnCharClassesIntoPatterns) {
-            super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true, new PEGPrinter());
+            super(whitespaceParser, startProduction, RedefinitionOption.defaultOption, true, GrammarPrinter.getDefault());
             this.tryTurnCharClassesIntoPatterns = tryTurnCharClassesIntoPatterns;
         }
 
@@ -187,7 +188,7 @@ public class PEG {
         }
 
         private @NotNull Rule regexTerminal(final @NotNull List<Object> c) {
-            return regex(strParser.processRegexp(c.get(0).toString(), 1));
+            return regex(strParser.processRegexp(c.get(0).toString(), 1, 1));
         }
 
         private @NotNull Rule dot(final @NotNull List<Object> c) {

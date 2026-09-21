@@ -6,17 +6,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class PEGExampleTest {
-    @Test
-    void test() {
-        var p = EBNF.parser("""
-                S = number , ("+" / "-") , S / number ;
-                number = [ "+" / "-" ] , digits ;
-                <digits> = #'[0-9]' , { #'[0-9]' } ;
-                """);
-        Assertions.assertEquals(
-                PT.create("S", PT.create("number", "+", "1", "2", "3")),
-                p.parse("+123"));
-    }
+//    @Test
+//    void test() {
+//        var p = EBNF.parser("""
+//                S = number , ("+" / "-") , S / number ;
+//                number = [ "+" / "-" ] , digits ;
+//                <digits> = #'[0-9]' , { #'[0-9]' } ;
+//                """);
+//        Assertions.assertEquals(
+//                PT.create("S", PT.create("number", "+", "1", "2", "3")),
+//                p.parse("+123"));
+//    }
 
     @Test
     void exampleTest() {

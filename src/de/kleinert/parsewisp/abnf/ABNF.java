@@ -26,22 +26,22 @@ import java.util.regex.Pattern;
 ///
 /// Any ABNF grammar provides the following core rules:
 /// ```g
-/// ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
-/// BIT            =  "0" / "1"
-/// CHAR           =  %x01-7F ; any 7-bit US-ASCII character, excluding NUL
-/// CR             =  %x0D ; carriage return
-/// CRLF           =  CR LF ; Internet standard newline
-/// CTL            =  %x00-1F / %x7F ; controls
-/// DIGIT          =  %x30-39 ; 0-9
-/// DQUOTE         =  %x22 ; " (Double Quote)
-/// HEXDIG         =  DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-/// HTAB           =  %x09 ; horizontal tab
-/// LF             =  %x0A ; linefeed
-/// LWSP           =  *(WSP / CRLF WSP)
-/// OCTET          =  %x00-FF ; 8 bits of data
-/// SP             =  %x20
-/// VCHAR          =  %x21-7E ; visible (printing) characters
-/// WSP            =  SP / HTAB ; white space
+/// ALPHA  =  %x41-5A / %x61-7A ; A-Z / a-z
+/// BIT    =  %d30-31           ; "0" or "1"
+/// CHAR   =  %x01-7F           ; any 7-bit US-ASCII character, excluding NUL
+/// CR     =  %x0D              ; carriage return
+/// CRLF   =  CR LF             ; Internet standard newline
+/// CTL    =  %x00-1F / %x7F    ; controls
+/// DIGIT  =  %x30-39           ; 0-9
+/// DQUOTE =  %x22              ; " (Double Quote)
+/// HEXDIG =  DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+/// HTAB   =  %x09              ; horizontal tab
+/// LF     =  %x0A              ; linefeed
+/// LWSP   =  *(WSP / CRLF WSP)
+/// OCTET  =  %x00-FF           ; 8 bits of data
+/// SP     =  %x20              ; " " Space
+/// VCHAR  =  %x21-7E           ; visible (printing) characters
+/// WSP    =  SP / HTAB         ; white space
 /// ```
 public final class ABNF {
     private ABNF() {
@@ -108,7 +108,7 @@ public final class ABNF {
             throw new ParserCreationFailure(tree.castToParseFailure().toString());
         }
 
-        return Parsewisp.parser(new ABNF().transform(tree.castToParseSuccess()), null);
+        return Parsewisp.parser(new ABNF().transform(tree.castToParseSuccess()), options);
     }
 
     /// The base grammar of ABNF itself. It is defined as follows:
@@ -201,7 +201,7 @@ public final class ABNF {
                             strParser.processString((String) c.get(1)),
                             ((String) c.get(0)).isEmpty() || ((String) c.get(0)).charAt(1) == 'i'));
             transformMap.put(Sym.sym("regexp"),
-                    c -> regex(strParser.processRegexp(c.get(0).toString(), 2)));
+                    c -> regex(strParser.processRegexp(c.get(0).toString(), 2, 1)));
             transformMap.put(Sym.sym("num-val"),
                     c -> c.get(1));
             transformMap.put(Sym.sym("bin-val"),
@@ -232,13 +232,13 @@ public final class ABNF {
             addProduction(Sym.sym("CRLF"), CRLF);
             addProduction(Sym.sym("CTL"), regex(Pattern.compile("[\\u0000-\\u001F|\\u007F]")));
             addProduction(Sym.sym("DIGIT"), regex(Pattern.compile("[0-9]")));
-            addProduction(Sym.sym("DQUOTE"), string("\"", false));
+            addProduction(Sym.sym("DQUOTE"), stringCS("\""));
             addProduction(Sym.sym("HEXDIG"), regex(Pattern.compile("[0-9a-fA-F]")));
             addProduction(Sym.sym("HTAB"), regex(Pattern.compile("\\u0009")));
             addProduction(Sym.sym("LF"), regex(Pattern.compile("\\u000A")));
             addProduction(Sym.sym("LWSP"), regex(Pattern.compile("([\\u0020\\u0009]|\\u000D\\u000A[\\u0020\\u0009])?")));
             addProduction(Sym.sym("OCTET"), regex(Pattern.compile("[\\u0000-\\u00FF]")));
-            addProduction(Sym.sym("SP"), string(" ", false));
+            addProduction(Sym.sym("SP"), stringCS(" "));
             addProduction(Sym.sym("VCHAR"), regex(Pattern.compile("[\\u0021-\\u007E]")));
             addProduction(Sym.sym("WSP"), WSP);
             return build();
@@ -259,7 +259,7 @@ public final class ABNF {
                 for (String part : digitStr.split("\\.")) {
                     sb.appendCodePoint(Integer.parseInt(part, radix));
                 }
-                return string(sb.toString());
+                return stringCS(sb.toString());
             }
 
             var parts = digitStr.split("-");
@@ -353,14 +353,14 @@ public final class ABNF {
                     cat(zeroOrMore(cWspRepeat), rule,
                             onceOrMore(alt(rule, cWspRepeat))));
 
-            // rule           =  (nonterm / hide-nt) defined-as elements c-nl
+            // rule   =  (nonterm / hide-nt) defined-as elements c-nl
             // defined-as     =  *c-wsp ("=" / "=/") *c-wsp
             // elements       =  alternation *WSP
             addProduction(
                     rule.getKeyword(),
                     cat(alt(hideNt, nonterm),
                             cWspRepeat,
-                            alt(string("="), string("=/")),
+                            alt(stringCS("="), stringCS("=/")),
                             cWspRepeat,
                             alternation,
                             zeroOrMore(WSP),
@@ -372,27 +372,27 @@ public final class ABNF {
                     regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # NonTerminal"));
             addProduction(
                     hideNt.getKeyword(),
-                    cat(string("<"), regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # Non-terminal"), string(">")));
+                    cat(stringCS("<"), regex("[a-zA-Z][a-zA-Z0-9\\-]*(?x) # Non-terminal"), stringCS(">")));
 
-            // c-wsp          =  WSP / (c-nl WSP)
+            // c-wsp  =  WSP / (c-nl WSP)
             addProduction(
                     cWsp.getKeyword(),
                     alt(regex(Pattern.compile("\\s+")), cNl));
 
-            // c-nl           =  comment / CRLF ; comment or newline
+            // c-nl   =  comment / CRLF ; comment or newline
             addProduction(
                     cNl.getKeyword(),
                     alt(comment, newline));
 
-            // comment        =  ";" *(WSP / VCHAR) CRLF
+            // comment=  ";" *(WSP / VCHAR) CRLF
             addProduction(
                     comment.getKeyword(),
-                    cat(string(";"), zeroOrMore(alt(WSP, regex("^\\S+(?x) # Comment until newline/eof"))), alt(newline, eof())));
+                    cat(stringCS(";"), zeroOrMore(alt(WSP, regex("^\\S+(?x) # Comment until newline/eof"))), alt(newline, eof())));
 
             // alternation    =  concatenation *(*c-wsp "/" *c-wsp concatenation)
             addProduction(
                     alternation.getKeyword(),
-                    cat(concatenation, zeroOrMore(cat(cWspRepeat, string("/"), cWspRepeat, concatenation))));
+                    cat(concatenation, zeroOrMore(cat(cWspRepeat, stringCS("/"), cWspRepeat, concatenation))));
 
             // concatenation  =  repetition *(1*c-wsp repetition)
             addProduction(
@@ -404,7 +404,7 @@ public final class ABNF {
                     repetition.getKeyword(),
                     cat(opt(regex("[0-9]*(\\*[0-9]*)?")), cWspRepeat, element));
 
-            // element        =  nonterm / hide / group / option / char-val / num-val
+            // element=  nonterm / hide / group / option / char-val / num-val
             var elementAlternatives = new ArrayList<Rule>(List.of(
                     nonterm, hide, group, option, charVal, regexp, numVal));
             if (abnfOptions.allowLookaheadAndNegations) {
@@ -414,30 +414,30 @@ public final class ABNF {
                     element.getKeyword(),
                     alt(elementAlternatives));
 
-            // group          =  "(" *c-wsp alternation *c-wsp ")"
+            // group  =  "(" *c-wsp alternation *c-wsp ")"
             addProduction(
                     group.getKeyword(),
-                    cat(string("("), cWspRepeat, alternation, cWspRepeat, string(")")));
+                    cat(stringCS("("), cWspRepeat, alternation, cWspRepeat, stringCS(")")));
 
-            // hide          =  "<" *c-wsp alternation *c-wsp ">"
+            // hide  =  "<" *c-wsp alternation *c-wsp ">"
             addProduction(
                     hide.getKeyword(),
-                    cat(string("<"), cWspRepeat, alternation, cWspRepeat, string(">")));
+                    cat(stringCS("<"), cWspRepeat, alternation, cWspRepeat, stringCS(">")));
 
-            // option         =  "[" *c-wsp alternation *c-wsp "]"
+            // option =  "[" *c-wsp alternation *c-wsp "]"
             addProduction(
                     option.getKeyword(),
-                    cat(string("["), cWspRepeat, alternation, cWspRepeat, string("]")));
+                    cat(stringCS("["), cWspRepeat, alternation, cWspRepeat, stringCS("]")));
 
             // look = <'&' opt-whitespace> element;
             addProduction(
                     Sym.sym("look"),
-                    cat(string("&"), cWspRepeat, element));
+                    cat(stringCS("&"), cWspRepeat, element));
 
             // neg = <'!' opt-whitespace> element;
             addProduction(
                     Sym.sym("neg"),
-                    cat(string("!"), cWspRepeat, element));
+                    cat(stringCS("!"), cWspRepeat, element));
 
             // char-val       =  [ "%i" / "%s" ] DQUOTE *(%x20-21 / %x23-7E) DQUOTE ; quoted string of SP and VCHAR without DQUOTE
             // char-val       =  #"(%[is])?\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"";
@@ -447,7 +447,7 @@ public final class ABNF {
                             regex("(%[is])?(?x) # String prefix"),
                             regex("\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"(?x) # String"))));
 
-            // regexp         = #'[^'\\\\]*(?:\\\\.[^'\\\\]*)*' / #\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"
+            // regexp = #'[^'\\\\]*(?:\\\\.[^'\\\\]*)*' / #\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"
             final @NotNull Rule rulesRule =
                     alternationGuaranteeDistinctAndNotEmpty(
                             List.of(regex("#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) # Regex"),
@@ -456,28 +456,28 @@ public final class ABNF {
                     regexp.getKeyword(),
                     rulesRule);
 
-            // num-val        =  "%" (bin-val / dec-val / hex-val)
+            // num-val=  "%" (bin-val / dec-val / hex-val)
             addProduction(
                     numVal.getKeyword(),
-                    cat(string("%"), alt(binVal, decVal, hexVal)));
+                    cat(stringCS("%"), alt(binVal, decVal, hexVal)));
 
-            // bin-val        =  "b" 1*BIT [ 1*("." 1*BIT) / ("-" 1*BIT) ] ; series of concatenated bit values or single ONEOF range
+            // bin-val=  "b" 1*BIT [ 1*("." 1*BIT) / ("-" 1*BIT) ] ; series of concatenated bit values or single ONEOF range
             // b [0-1]+
             // b [0-1]+ ( "." [0-1]+ )+
             // b [0-1]+ "-" [0-1]+
             addProduction(
                     binVal.getKeyword(),
-                    cat(string("b"), regex("[01]+([.01]*[01]|-[01]+)?(?x) # Binary num-val")));
+                    cat(stringCS("b"), regex("[01]+([.01]*[01]|-[01]+)?(?x) # Binary num-val")));
 
-            // dec-val        =  "d" 1*DIGIT [ 1*("." 1*DIGIT) / ("-" 1*DIGIT) ]
+            // dec-val=  "d" 1*DIGIT [ 1*("." 1*DIGIT) / ("-" 1*DIGIT) ]
             addProduction(
                     decVal.getKeyword(),
-                    cat(string("d"), regex("[0-9]+([.0-9]*[0-9]|-[0-9]+)?(?x) # Decimal num-val")));
+                    cat(stringCS("d"), regex("[0-9]+([.0-9]*[0-9]|-[0-9]+)?(?x) # Decimal num-val")));
 
-            // hex-val        =  "x" 1*HEXDIG [ 1*("." 1*HEXDIG) / ("-" 1*HEXDIG) ]
+            // hex-val=  "x" 1*HEXDIG [ 1*("." 1*HEXDIG) / ("-" 1*HEXDIG) ]
             addProduction(
                     hexVal.getKeyword(),
-                    cat(string("x"), regex("[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?(?x) # Hexadecimal num-val")));
+                    cat(stringCS("x"), regex("[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?(?x) # Hexadecimal num-val")));
 
             addProduction(WSP.getKeyword(), regex("[\\u0020\\u0009](?x) # Whitespace"));
         }

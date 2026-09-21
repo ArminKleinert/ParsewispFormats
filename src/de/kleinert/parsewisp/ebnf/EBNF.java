@@ -5,6 +5,7 @@ import de.kleinert.parsewisp.Sym;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
+import de.kleinert.parsewisp.grammar.GrammarPrinter;
 import de.kleinert.parsewisp.parser.Parser;
 import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.parser_options.RedefinitionOption;
@@ -254,7 +255,7 @@ public class EBNF {
         }
 
         private @NotNull Rule regexTerminal(final @NotNull List<Object> c) {
-            return regex(strParser.processRegexp(c.get(0).toString(), 2));
+            return regex(strParser.processRegexp(c.get(0).toString(), 2, 1));
         }
 
         private @NotNull Rule metaIdentifier(final @NotNull List<Object> c) {
