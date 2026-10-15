@@ -90,7 +90,7 @@ public class PEG {
             for (Object r : c) {
                 @SuppressWarnings("unchecked")
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
-                var lhs = prod.getKey().isHidden() ? prod.getValue().hideTag() : prod.getValue();
+                var lhs = prod.getKey().isHiddenInResult() ? prod.getValue().mergeToTop() : prod.getValue();
                 addProduction(prod.getKey().getKeyword(), lhs);
             }
             return null;
@@ -174,11 +174,11 @@ public class PEG {
         }
 
         private @NotNull Rule hideNt(final @NotNull List<Object> c) {
-            return ((Rule) c.get(1)).enableHideTag();
+            return ((Rule) c.get(1)).hideInResult();
         }
 
         private @NotNull Rule hide(final @NotNull List<Object> c) {
-            return ((Rule) c.get(1)).enableHideTag();
+            return ((Rule) c.get(1)).hideInResult();
         }
 
         private final @NotNull StrParser strParser = new StrParser();

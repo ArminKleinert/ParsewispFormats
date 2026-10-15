@@ -106,7 +106,7 @@ class ABNFPrinterTest {
                 new ABNF.ABNFOptions(null, null, true));
         var text = p.show();
         var p2 = ABNF.parser(text);
-        Assertions.assertEquals(p.grammar(), p2.grammar());
+        Assertions.assertEquals(p.grammar().toString(), p2.grammar().toString());
     }
 
     @Test

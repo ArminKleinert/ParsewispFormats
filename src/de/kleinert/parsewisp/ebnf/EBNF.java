@@ -176,7 +176,7 @@ public class EBNF {
             for (Object r : c) {
                 //noinspection unchecked
                 var prod = (Map.Entry<NonTerminal, Rule>) r;
-                var lhs = prod.getKey().isHidden() ? prod.getValue().hideTag() : prod.getValue();
+                var lhs = prod.getKey().isHiddenInResult() ? prod.getValue().mergeToTop() : prod.getValue();
                 addProduction(prod.getKey().getKeyword(), lhs);
             }
             return null;
@@ -263,7 +263,7 @@ public class EBNF {
         }
 
         private @NotNull Rule hideNt(final @NotNull List<Object> c) {
-            return nt(c.get(1).toString()).enableHideTag();
+            return nt(c.get(1).toString()).hideInResult();
         }
 
         private @NotNull Integer integer(final @NotNull List<Object> c) {
