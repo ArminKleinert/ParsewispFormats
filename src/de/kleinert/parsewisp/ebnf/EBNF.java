@@ -5,7 +5,6 @@ import de.kleinert.parsewisp.Sym;
 import de.kleinert.parsewisp.error.ParserCreationFailure;
 import de.kleinert.parsewisp.grammar.Grammar;
 import de.kleinert.parsewisp.grammar.GrammarBuilder;
-import de.kleinert.parsewisp.grammar.GrammarPrinter;
 import de.kleinert.parsewisp.parser.Parser;
 import de.kleinert.parsewisp.parser_options.ParserCreationOptions;
 import de.kleinert.parsewisp.parser_options.RedefinitionOption;
@@ -48,11 +47,11 @@ public class EBNF {
      */
     public static @NotNull Parser parser(final @NotNull String grammar, @Nullable EBNFOptions options) {
         options = options == null ? EBNFOptions.getDefault() : options;
-        var res = Parsewisp.parser(baseGrammar(options), options).parse(grammar);
+        var res = Parsewisp.parser(baseGrammar(options), ParserCreationOptions.getDefault()).parse(grammar);
         if (res.isFailure()) throw new ParserCreationFailure(res.castToParseFailure().toString());
         return Parsewisp.parser(
                 new EBNFTransformer(options).transform(res.castToParseSuccess()),
-                ParserCreationOptions.getDefault());
+                options);
     }
 
     /// The base grammar for Parsewisp EBNF. The grammar can be expressed as follows:

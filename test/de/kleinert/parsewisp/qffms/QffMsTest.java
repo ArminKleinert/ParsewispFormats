@@ -1,7 +1,5 @@
 package de.kleinert.parsewisp.qffms;
 
-import de.kleinert.parsewisp.abnf.ABNF;
-import de.kleinert.parsewisp.abnf.ABNFPrinter;
 import org.junit.jupiter.api.Test;
 
 public class QffMsTest {
@@ -11,9 +9,9 @@ public class QffMsTest {
 //        System.out.println(baseParser.show());
 
         var g = """
-                S = 'a'..'z'
+                S = ('a'..'\\u2626'){3,4} "\\u2626"
                 """;
-//        System.out.println(QffMs.parser(g));
+        System.out.println(QffMs.parser(g).show());
     }
 
     @Test
