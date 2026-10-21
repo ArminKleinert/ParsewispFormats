@@ -1,5 +1,7 @@
 package de.kleinert.parsewisp.qffms;
 
+import de.kleinert.parsewisp.testutil.PT;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class QffMsTest {
@@ -16,15 +18,47 @@ public class QffMsTest {
 
     @Test
     void test1() {
-//        var p = ABNF.parser("""
-//                sum          = product ("+" / "-") sum   / product
-//                product      = power ("*" / "/") product / power
-//                power        = paren-or-val "^" power    / paren-or-val
-//                paren-or-val = "(" sum ")"               / number
-//                number       = ["+" / "-"] digits
-//                <digits>     = 1* %d48-57
-//                """);
-////        System.out.println(p.show());
-//        System.out.println(new ABNFPrinter().toString(p.grammar()));
+        var p = QffMs.parser("""
+                sum          = product ("+" | "-") sum   | product
+                product      = power ("*" | "/") product | power
+                power        = paren-or-val "^" power    | paren-or-val
+                paren-or-val = "(" sum ")"               | number
+                number       = ("+" | "-")? digits
+                digits       = ('0'..'9')+
+                """);
+        var res = p.parse("1+2*3^4+-55");
+        var pt = PT.create("sum",
+                PT.create("product",
+                        PT.create("power",
+                                PT.create("paren-or-val",
+                                        PT.create("number", PT.create("digits", "1"))))),
+                "+",
+                PT.create("sum",
+                        PT.create("product",
+                                PT.create("power",
+                                        PT.create("paren-or-val",
+                                                PT.create("number",
+                                                        PT.create("digits", "2")))),
+                                "*",
+                                PT.create("product",
+                                        PT.create("power",
+                                                PT.create("paren-or-val",
+                                                        PT.create("number",
+                                                                PT.create("digits", "3"))),
+                                                "^",
+                                                PT.create("power",
+                                                        PT.create("paren-or-val",
+                                                                PT.create("number",
+                                                                        PT.create("digits", "4"))))))),
+                        "+",
+                        PT.create("sum",
+                                PT.create("product",
+                                        PT.create("power",
+                                                PT.create("paren-or-val",
+                                                        PT.create("number",
+                                                                "-",
+                                                                PT.create("digits", "5", "5"))))))));
+        //Viztool.dumpParseTree("parse-tree", res.castToParseSuccess());
+        Assertions.assertEquals(pt, res);
     }
 }

@@ -32,7 +32,7 @@ public class QffMs {
         var g = """
                 syntax         = WS ( definition WS )+ EOF
                 definition     = identifier WS "=" WS alternation
-                identifier     = #'[a-zA-Z_][a-zA-Z0-9_]*'
+                identifier     = #'[a-zA-Z_\\-][a-zA-Z0-9_\\-]*'
                 alternation    = concatenation ( WS "|" WS concatenation )*
                 concatenation  = ( (characterRange | prefix) WS )+
                 prefix         = ("!" | "&")? suffix
@@ -44,6 +44,7 @@ public class QffMs {
                 
                 characterRange = character ".." character
                 character      = #"'\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]'"
+                               | #"'\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]'"
                                | "'\\\\''"
                                | #"'.'"
                 
@@ -130,8 +131,8 @@ public class QffMs {
         }
 
         private Object alternation(List<Object> c) {
-            //noinspection unchecked
-            return alt((List<Rule>) ((Object) c));
+            // Remove strings from the tree, keep only rules and make an alternation.
+            return alt(c.stream().filter(it -> it instanceof Rule).map(it -> (Rule) it).toList());
         }
 
         private Object concatenation(List<Object> c) {
