@@ -54,8 +54,11 @@ public class QffMsPrinter implements GrammarPrinter {
 
         if (codepoint < 256 && !Character.isISOControl(codepoint)) {
             sb.append((char) codepoint);
-        } else {
+        } else if (Character.charCount(codepoint) == 1) {
             sb.append(String.format("\\u%04X", codepoint));
+        } else {
+            char[] parts = Character.toChars(codepoint);
+            sb.append(String.format("\\u%04X\\u%04X", (int) parts[0], (int) parts[1]));
         }
 
         sb.append('\'');

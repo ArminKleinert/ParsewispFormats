@@ -56,31 +56,31 @@ public class EBNF {
 
     /// The base grammar for Parsewisp EBNF. The grammar can be expressed as follows:
     /// ```
-    /// syntax = <cWsp> syntaxRule <cWsp> { (syntaxRule <cWsp>) }
-    /// syntaxRule = (metaIdentifier | hideNt) <cWsp> "=" <cWsp> definitionsList <cWsp> (";" | ".")
-    /// definitionsList = orderedDefinitionsList { (<cWsp> "|" <cWsp> orderedDefinitionsList) }
-    /// orderedDefinitionsList = singleDefinition { (<cWsp> "/" <cWsp> singleDefinition) }
-    /// singleDefinition = term { (<cWsp> "," <cWsp> term) }
-    /// term = factor [ (<cWsp> "-" <cWsp> exception) ]
-    /// exception = factor
-    /// factor = [ (integer "*" <cWsp>) ] primary
-    /// primary = optionalSequence | repeatedSequence | specialSequence | groupedSequence | metaIdentifier | terminal | empty | hideSeq
-    /// look = "&" <cWsp> primary
-    /// neg = "!" <cWsp> primary
-    /// empty = ε
-    /// optionalSequence = "[" <cWsp> definitionsList <cWsp> "]"
-    /// repeatedSequence = "{" <cWsp> definitionsList <cWsp> "}"
-    /// groupedSequence = "(" <cWsp> definitionsList <cWsp> ")"
-    /// hideSeq = "<" <cWsp> definitionsList <cWsp> ">"
-    /// terminal = stringTerminal | regexTerminal
-    /// stringTerminal = #""[^"\\]*(?:\\.[^"\\]*)*"(?x) # String" | #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) # String"
-    /// regexTerminal = #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) # Regex" | #"#´[^'\\]*(?:\\.[^'\\]*)*´(?x) # Regex" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # Regex"
-    /// metaIdentifier = #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal"
-    /// hideNt = "<" #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal" ">"
-    /// integer = #"[0-9]+"
-    /// specialSequence = "?" #"[^?]+" "?"
-    /// comment = "(*" { (comment | #"(?s)(?:(?!\(\*|\*\)).)*(?x) # Comment text") } "*)"
-    /// cWsp = <comment | #"\s*"+>
+    /// syntax = <cWsp> , syntaxRule , <cWsp> , { syntaxRule <cWsp> } ;
+    /// syntaxRule = (metaIdentifier | hideNt) , <cWsp> , "=" , <cWsp> , definitionsList , <cWsp> , (";" | ".") ;
+    /// definitionsList = orderedDefinitionsList , { <cWsp> "|" <cWsp> orderedDefinitionsList } ; (* Alternations use "!" instead of "|" with alternative representation *)
+    /// orderedDefinitionsList = singleDefinition , { <cWsp> "/" <cWsp> singleDefinition } ;
+    /// singleDefinition = term , { <cWsp> "," <cWsp> term } ;
+    /// term = factor , [ <cWsp> , "-" , <cWsp> , exception ] ;
+    /// exception = factor ;
+    /// factor = [ integer , "*" , <cWsp> ] , primary | look | neg ;
+    /// primary = optionalSequence | repeatedSequence | specialSequence | groupedSequence | metaIdentifier | terminal | empty | hideSeq ;
+    /// look = "&" , <cWsp> , primary ;
+    /// neg = "!" , <cWsp> , primary ; (* May not work with alternative representation *)
+    /// empty = "" ;
+    /// optionalSequence = "[" , <cWsp> , definitionsList , <cWsp> , "]" ; (* Or "(/" and "/)" with alternative representation *)
+    /// repeatedSequence = "{" , <cWsp> , definitionsList , <cWsp> , "}" ; (* Or "(:" and ":)" with alternative representation *)
+    /// groupedSequence = "(" , <cWsp> , definitionsList , <cWsp> , ")" ;
+    /// hideSeq = "<" , <cWsp> , definitionsList , <cWsp> , ">" ;
+    /// terminal = stringTerminal | regexTerminal ;
+    /// stringTerminal = #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # String" | #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) # String" ;
+    /// regexTerminal = #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) # Regex" | #"#´[^'\\]*(?:\\.[^'\\]*)*´(?x) # Regex" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # Regex" ;
+    /// metaIdentifier = #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal" ;
+    /// hideNt = "<" , #"[a-zA-Z][a-zA-Z0-9\_]*(?x) # NonTerminal" , ">" ;
+    /// integer = #"[0-9]+" ;
+    /// specialSequence = "?" , #"[^?]+" , "?" ;
+    /// comment = "(*" , { comment | #"(?s)(?:(?!\(\*|\*\)).)*(?x) # Comment text" } , "*)" ;
+    /// cWsp = <(comment | #"\s*")+> ;
     /// ```
     ///
     /// @param options The options.
@@ -381,7 +381,7 @@ public class EBNF {
                     nt("regexTerminal")));
 
             addProduction("stringTerminal", alt(
-                    regex("\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"(?x) # String"),
+                    regex("\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) # String"),
                     regex("'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) # String")));
 
             addProduction("regexTerminal", alt(

@@ -46,9 +46,9 @@ public class QffMs {
                 character      = #"'\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]'"
                                | #"'\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]'"
                                | "'\\\\''"
-                               | #"'.'"
+                               | #"'\\S'"
                 
-                numRep         = "{" #"[0-9]+" [ "," #"[0-9]+" ] "}"
+                numRep         = "{" #"[0-9]*" [ "," #"[0-9]*" ] "}"
                 
                 <WS>           = < (space | comment)* >
                 space          = #"\\s+"
@@ -159,8 +159,7 @@ public class QffMs {
             if (c.get(1) instanceof int[]) {
                 //noinspection PatternVariableCanBeUsed
                 var arr = (int[]) c.get(1);
-                if (arr.length == 1) return rep(rule, arr[0]);
-                else return rep(rule, arr[0], arr[1]);
+                return rep(rule, arr[0], arr[1]);
             }
             return switch (((String) c.get(1)).charAt(0)) {
                 case '+' -> onceOrMore(rule);
@@ -171,13 +170,18 @@ public class QffMs {
         }
 
         private int[] numRep(List<Object> c) {
-            var min = Integer.parseInt((String) c.get(1));
+            var c0 = (String) c.get(1);
+            var min = c0.isEmpty() ? 0 : Integer.parseInt(c0);
+            int max;
             if (c.size() == 3) {
                 // Format: numRep = "{" digits "}"
-                return new int[]{min};
+                max = min;
+            } else {
+                // Format: numRep = "{" digits "," digits "}"
+                var c3 = (String) c.get(3);
+                max = c3.isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(c3);
             }
-            // Format: numRep = "{" digits "," digits "}"
-            return new int[]{min, Integer.parseInt((String) c.get(3))};
+            return new int[]{min, max};
         }
 
         private Object primary(List<Object> c) {

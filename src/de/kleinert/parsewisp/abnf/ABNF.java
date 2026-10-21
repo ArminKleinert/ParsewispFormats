@@ -113,29 +113,29 @@ public final class ABNF {
 
     /// The base grammar of ABNF itself. It is defined as follows:
     /// ```
-    /// rulelist = { c-wsp } rule (rule | <{ c-wsp }>)+
-    /// rule = (hide-nt | nonterm) <{ c-wsp }> ("=" | "=/") <{ c-wsp }> alternation { WSP } [ c-nl ]
-    /// nonterm = #"[a-zA-Z][a-zA-Z0-9\-]*"
-    /// hide-nt = "<" #"[a-zA-Z][a-zA-Z0-9\-]*" ">"
-    /// c-wsp = #"\s+" | c-nl
-    /// c-nl = comment | #"\r?\n"
-    /// comment = ";" { (WSP | #"^\S+") } (#"\r?\n" | eof)
-    /// alternation = concatenation { (<{ c-wsp }> "/" <{ c-wsp }> concatenation) }
-    /// concatenation = repetition { (<{ c-wsp }> repetition) }
-    /// repetition = [ #"[0-9]*(\*[0-9]*)?" ] <{ c-wsp }> element
-    /// element = nonterm | hide | group | option | char-val | regexp | num-val
-    /// group = "(" <{ c-wsp }> alternation <{ c-wsp }> ")"
-    /// hide = "<" <{ c-wsp }> alternation <{ c-wsp }> ">"
-    /// option = "[" <{ c-wsp }> alternation <{ c-wsp }> "]"
-    /// look = "&" <{ c-wsp }> element
-    /// neg = "!" <{ c-wsp }> element
-    /// char-val = #"(%[is])?" #""[^"\\]*(?:\\.[^"\\]*)*""
-    /// regexp = #"#'[^'\\]*(?:\\.[^'\\]*)*'" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\""
-    /// num-val = "%" (bin-val | dec-val | hex-val)
-    /// bin-val = "b" #"[01]+([.01]*[01]|-[01]+)?"
-    /// dec-val = "d" #"[0-9]+([.0-9]*[0-9]|-[0-9]+)?"
-    /// hex-val = "x" #"[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?"
-    /// WSP = #"[\\u0020\\u0009]"
+    /// rulelist = { c-wsp } , rule , (rule | <{ c-wsp }>)+ ;
+    /// rule = (hide-nt | nonterm) , <{ c-wsp }> , ("=" | "=/") , <{ c-wsp }> , alternation , { WSP } , [ c-nl ] ;
+    /// nonterm = #"[a-zA-Z][a-zA-Z0-9\-]*(?x) # NonTerminal" ;
+    /// hide-nt = "<" , #"[a-zA-Z][a-zA-Z0-9\-]*(?x) # Non-terminal" , ">" ;
+    /// c-wsp = #"\s+" | c-nl ;
+    /// c-nl = comment | #"\r?\n" ;
+    /// comment = ";" , { WSP | #"^\S+(?x) # Comment until newline/eof" } , (#"\r?\n" | EOF) ;
+    /// alternation = concatenation , { <c-wsp*> "/" <c-wsp*> concatenation } ;
+    /// concatenation = repetition , { <c-wsp*> repetition } ;
+    /// repetition = [ #"[0-9]*(\*[0-9]*)?" ] , <{ c-wsp }> , element ;
+    /// element = nonterm | hide | group | option | char-val | regexp | num-val | look | neg ;
+    /// group = "(" , <{ c-wsp }> , alternation , <{ c-wsp }> , ")" ;
+    /// hide = "<" , <{ c-wsp }> , alternation , <{ c-wsp }> , ">" ;
+    /// option = "[" , <{ c-wsp }> , alternation , <{ c-wsp }> , "]" ;
+    /// look = "&" , <{ c-wsp }> , element ;
+    /// neg = "!" , <{ c-wsp }> , element ;
+    /// char-val = #"(%[is])?(?x) # String prefix" , #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # String" ;
+    /// regexp = #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) # Regex" | #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) # Regex" ;
+    /// num-val = "%" , (bin-val | dec-val | hex-val) ;
+    /// bin-val = "b" , #"[01]+([.01]*[01]|-[01]+)?(?x) # Binary num-val" ;
+    /// dec-val = "d" , #"[0-9]+([.0-9]*[0-9]|-[0-9]+)?(?x) # Decimal num-val" ;
+    /// hex-val = "x" , #"[a-fA-F0-9]+([.a-fA-F0-9]*[a-fA-F0-9]|-[a-fA-F0-9]+)?(?x) # Hexadecimal num-val" ;
+    /// WSP = #"[\\u0020\\u0009](?x) # Whitespace" ;
     /// ```
     ///
     /// The `look` and `neg` rules are only added if {@link ABNFOptions#allowLookaheadAndNegations} is true for the options.
@@ -245,7 +245,7 @@ public final class ABNF {
         }
 
         private @NotNull List<Rule> rulesNotNull(final @NotNull List<Object> content) {
-            return content.stream().filter(Objects::nonNull).filter(it->it instanceof Rule).map(it->(Rule)it).toList();
+            return content.stream().filter(Objects::nonNull).filter(it -> it instanceof Rule).map(it -> (Rule) it).toList();
         }
 
         private @Nullable Object ignore(final @NotNull List<Object> content) {
@@ -445,7 +445,7 @@ public final class ABNF {
                     charVal.getKeyword(),
                     concatNoEpsilonMoreThan1(List.of(
                             regex("(%[is])?(?x) # String prefix"),
-                            regex("\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"(?x) # String"))));
+                            regex("\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) # String"))));
 
             // regexp = #'[^'\\\\]*(?:\\\\.[^'\\\\]*)*' / #\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"
             final @NotNull Rule rulesRule =
