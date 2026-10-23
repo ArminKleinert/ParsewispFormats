@@ -315,11 +315,12 @@ public class EBNF {
                     List.of(nt("singleDefinition"),
                             zeroOrMore(cat(cWsp, string("/"), cWsp, nt("singleDefinition"))))));
 
+            var termOrEmpty = alt(nt("term"), nt("empty"));
             var definitionTailRule = options.requireCommasAndTerminators
-                    ? cat(cWsp, string(","), cWsp, nt("term"))
-                    : cat(cWsp, opt(cat(string(","), cWsp)), nt("term"));
+                    ? cat(cWsp, string(","), cWsp, termOrEmpty)
+                    : cat(cWsp, opt(cat(string(","), cWsp)), termOrEmpty);
             addProduction("singleDefinition", cat(
-                    List.of(nt("term"),
+                    List.of(termOrEmpty,
                             zeroOrMore(definitionTailRule))));
 
             addProduction("term", cat(
@@ -336,8 +337,7 @@ public class EBNF {
             if (options.allowLookaheadAndNegations) {
                 factorRules.addAll(List.of(nt("look"), nt("neg")));
             }
-            addProduction("factor", alt(
-                    factorRules));
+            addProduction("factor", alt(factorRules));
 
             addProduction("primary", alt(
                     nt("optionalSequence"),
@@ -346,7 +346,6 @@ public class EBNF {
                     nt("groupedSequence"),
                     nt("metaIdentifier"),
                     nt("terminal"),
-                    nt("empty"),
                     nt("hideSeq")));
 
             addProduction(

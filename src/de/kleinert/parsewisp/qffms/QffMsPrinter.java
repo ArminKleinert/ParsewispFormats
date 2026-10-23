@@ -49,7 +49,7 @@ public class QffMsPrinter implements GrammarPrinter {
         return sb.toString();
     }
 
-    private void valRangePartToString(int codepoint, StringBuilder sb) {
+    private void valRangePartToString(int codepoint, @NotNull StringBuilder sb) {
         sb.append('\'');
 
         if (codepoint < 256 && !Character.isISOControl(codepoint)) {

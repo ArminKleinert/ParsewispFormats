@@ -23,13 +23,13 @@ class EBNFLookaheadAndNegationTest {
 
     @Test
     void negationTest() {
-        var opts = new EBNF.EBNFOptions(null, null, true, false, false, null);
+        var opts = new EBNF.EBNFOptions(null, null, true, false, true, null);
 
         var pDefault = EBNF.parser("S = { #'[ab]' } ;");
         Assertions.assertEquals(PT.create("S", "a", "b"), pDefault.parse("ab"));
         Assertions.assertEquals(PT.create("S", "b", "a"), pDefault.parse("ba"));
 
-        var pNeg = Parsewisp.parser("S = !'a' , { #'[ab]' } ;", opts);
+        var pNeg = EBNF.parser("S = !'a' , { #'[ab]' } ;", opts);
         Assertions.assertTrue(pNeg.parse("ab").isFailure());
         Assertions.assertEquals(PT.create("S", "b", "a"), pNeg.parse("ba"));
     }

@@ -34,7 +34,9 @@ class EBNFAlternationTest {
 
     @Test
     void testAlternativeCreatesAmbiguitySlash() {
-        var p = EBNF.parser("S = \"a\" / S , S ;");
+        var p = EBNF.parser(
+                "S = \"a\" / S , S ;",
+                new EBNF.EBNFOptions(null, null, true, true, true, null));
 
         var trees = Set.of(
                 PT.create("S",
