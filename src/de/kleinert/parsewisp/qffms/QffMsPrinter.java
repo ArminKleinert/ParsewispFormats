@@ -54,6 +54,8 @@ public class QffMsPrinter implements GrammarPrinter {
 
         if (codepoint < 256 && !Character.isISOControl(codepoint)) {
             sb.append((char) codepoint);
+        } else if (codepoint == '\'' || codepoint == '\r' || codepoint == '\n' || codepoint == '\t') {
+            sb.append(escape(String.valueOf((char) codepoint), (char) codepoint));
         } else if (Character.charCount(codepoint) == 1) {
             sb.append(String.format("\\u%04X", codepoint));
         } else {
@@ -62,5 +64,15 @@ public class QffMsPrinter implements GrammarPrinter {
         }
 
         sb.append('\'');
+    }
+
+    @Override
+    public @NotNull String regexpToString(@NotNull RegexTerm rule) {
+        return "´" + this.escape(rule.getRegexp().pattern(), '´') + "´";
+    }
+
+    @Override
+    public @NotNull String strTermToString(@NotNull StringTerm rule) {
+        return "´" + this.escape(rule.getString(), '"') + "´";
     }
 }

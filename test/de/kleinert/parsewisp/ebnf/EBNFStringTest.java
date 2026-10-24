@@ -36,15 +36,18 @@ class EBNFStringTest {
     void invalidStringTest() {
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                () -> EBNF.parser("S = \""));
+                () -> EBNF.parser("S = \" ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                () -> EBNF.parser("S = \"a"));
+                () -> EBNF.parser("S = \"a ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                () -> EBNF.parser("S = a\""));
+                () -> EBNF.parser("S = a\" ;"));
         Assertions.assertThrows(
                 ParserCreationFailure.class,
-                () -> EBNF.parser("S = \"\"\""));
+                () -> EBNF.parser("S = \"\", \" ;"));
+        Assertions.assertThrows(
+                ParserCreationFailure.class,
+                () -> EBNF.parser("S = \" , \"\" ;"));
     }
 }

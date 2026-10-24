@@ -49,8 +49,9 @@ public class QffMs {
                                | #"'\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]\\\\u[a-zA-F0-9][a-zA-F0-9][a-zA-F0-9][a-zA-F0-9]'"
                                | "'\\\\''"
                                | #"'\\S'"
+                               | #"´\\\\[\\\\bfrnt\\"']´"
                 
-                numRep         = "{" #"[0-9]*" [ "," #"[0-9]*" ] "}"
+                numRep         = "{" WS #"[0-9]*" WS [ "," WS #"[0-9]*" WS ] "}"
                 
                 <WS>           = < (space | comment)* >
                 space          = #"\\s+"
